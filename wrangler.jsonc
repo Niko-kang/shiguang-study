@@ -11,7 +11,9 @@
     {
       "binding": "DB",
       "database_name": "shiguang-study-records",
-      "migrations_dir": "cloud/migrations"
+      "migrations_dir": "cloud/migrations",
+      "database_id": "b371190a-9220-4bd9-8155-49f54f07f31e"
     }
-  ]
+  ],
+  "account_id": "e542953ac7f8f3cf2dd479a69b323246"
 }
