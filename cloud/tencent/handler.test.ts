@@ -10,7 +10,7 @@ function memory(){
 }
 test('progress persists and a competing device cannot overwrite the winner',async()=>{
  const {store}=memory(),handle=createHandler(store);
- const request={path:'/api/record',method:'PUT',body:{date:'2026-10-05',status:'done',version:0}};
+ const request={path:'/api/record',method:'PUT',body:{date:'2026-10-08',status:'done',version:0}};
  const results=await Promise.all([handle(request),handle({...request,body:{...request.body,status:'doing'}})]);
  assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
  const got=await handle({path:'/api/space',method:'GET'});
@@ -42,7 +42,7 @@ test('invalid requests and unavailable storage fail closed; migration mode refus
  const broken=createHandler({...store,async list(){throw new Error('network')}});
  assert.equal((await broken({path:'/api/space',method:'GET'})).status,503);
  assert.equal((await broken({path:'/health',method:'GET'})).status,503);
- assert.equal((await createHandler(store,{readOnly:true})({path:'/api/record',method:'PUT',body:{date:'2026-10-05',status:'done',version:0}})).status,503);
+ assert.equal((await createHandler(store,{readOnly:true})({path:'/api/record',method:'PUT',body:{date:'2026-10-08',status:'done',version:0}})).status,503);
 });
 test('CloudBase adapter handles transaction single-document reads and paginates past 100 rows',async()=>{
  const rows=Array.from({length:101},(_,i)=>({_id:String(i).padStart(3,'0'),version:1,updatedAt:'2026-10-05T00:00:00Z'}));
