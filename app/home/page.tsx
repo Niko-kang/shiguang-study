@@ -3,7 +3,7 @@ import {pageUrl} from '@/lib/urls';
 import './cover.css';
 
 export default function Home(){return <main className="cover-page">
- <img className="cover-background" src={pageUrl('/assets/study-corner-v2.webp')} fetchPriority="high" alt="阳光落在窗边的书桌上，一本摊开的书、一盏绿台灯和一杯茶"/>
+ <img className="cover-background" src={pageUrl('/assets/study-corner-oceanfront.webp')} fetchPriority="high" alt="书桌正对打开的落地窗，前方是开阔的大海与海平线，两侧白纱帘轻垂"/>
  <div className="cover-shade" aria-hidden="true"/>
  <header className="cover-header">
   <a className="cover-brand" href={pageUrl('/')} aria-label="小翁自习室首页"><BookOpen size={23} strokeWidth={1.5}/><span>小翁自习室</span></a>
@@ -11,8 +11,8 @@ export default function Home(){return <main className="cover-page">
  </header>
  <section className="cover-hero" aria-labelledby="cover-title">
   <p className="cover-eyebrow">2027 备考计划</p>
-  <h1 id="cover-title">每一小步，<br/>都通向<span>更好的你。</span></h1>
-  <p className="cover-lead">把喧嚣留在窗外，把这一刻留给自己。<br/>不必急于抵达，今天也在向前。</p>
+  <h1 id="cover-title">慢慢来，<br/>你想要的未来<br/><span>正在靠近。</span></h1>
+  <p className="cover-lead">忙碌之外，留一点时间给自己。<br/>读一页书，离心里的期待更近一点。</p>
   <div className="cover-actions"><a className="cover-primary" href={pageUrl('/plan/')}>开始今天的学习<ArrowRight size={18}/></a><a className="cover-secondary" href={pageUrl('/overview/')}>了解考试<ArrowUpRight size={16}/></a></div>
  </section>
  <footer className="cover-footer">
