@@ -1,0 +1,23 @@
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {z} from 'zod';
+import {mistakeSchema,examSchema} from '../app/learning-model.ts';
+const source=new URL(process.argv[2]||'');
+if(source.protocol!=='https:'||source.username||source.password)throw new Error('请指定不含凭证的 HTTPS 原站地址');
+const plan=JSON.parse(await readFile(new URL('../app/plan.json',import.meta.url),'utf8'));
+const days=new Set(plan.flatMap(w=>w.days.filter(d=>d.kind==='study').map(d=>d.date)));
+const destinations=new Set(plan.flatMap(w=>w.days.filter(d=>d.kind==='study'||d.kind==='buffer').map(d=>d.date)));
+const stamp=z.string().datetime();
+const progress=z.object({date:z.string(),status:z.enum(['todo','doing','done','deferred']),deferredTo:z.string(),version:z.number().int().positive(),updatedAt:stamp}).refine(r=>days.has(r.date)&&(r.status!=='deferred'||(destinations.has(r.deferredTo)&&r.deferredTo>r.date)));
+const envelope=z.object({id:z.string().uuid(),version:z.number().int().positive(),archived:z.boolean(),updatedAt:stamp,data:z.unknown()});
+async function get(path,key,schema){const r=await fetch(new URL(path,source),{signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error(`原站 ${path} 返回 ${r.status}，未完成导出`);const data=await r.json();return z.array(schema).parse(data[key])}
+const records=await get('/api/space','records',progress);
+const mistakes=await get('/api/learning?kind=mistake','entries',envelope.extend({data:mistakeSchema}));
+const exams=await get('/api/learning?kind=exam','entries',envelope.extend({data:examSchema}));
+const entries=[...mistakes.map(e=>({...e,kind:'mistake'})),...exams.map(e=>({...e,kind:'exam'}))];
+if(new Set(records.map(r=>r.date)).size!==records.length||new Set(entries.map(e=>e.id)).size!==entries.length)throw new Error('发现重复记录，停止导出');
+const text=v=>`CAST(X'${Buffer.from(String(v),'utf8').toString('hex')}' AS TEXT)`;
+const sql=[...records.map(r=>`INSERT INTO public_progress(task_date,status,deferred_to,version,updated_at) VALUES(${text(r.date)},${text(r.status)},${text(r.deferredTo)},${r.version},${text(r.updatedAt)});`),...entries.map(e=>`INSERT INTO learning_entries(id,kind,data,version,archived,updated_at) VALUES(${text(e.id)},${text(e.kind)},${text(JSON.stringify(e.data))},${e.version},${e.archived?1:0},${text(e.updatedAt)});`)];
+const dir='backups/'+new Date().toISOString().replace(/[:.]/g,'-');await mkdir(dir,{recursive:true});
+await writeFile(dir+'/records.json',JSON.stringify({exportedAt:new Date().toISOString(),source:source.origin,records,mistakes,exams},null,2),{flag:'wx',mode:0o600});
+await writeFile(dir+'/import.sql',sql.length?sql.join('\n')+'\n':'-- 已核验三个接口，原站当前无学习记录。\n',{flag:'wx',mode:0o600});
+console.log(JSON.stringify({backupDirectory:dir,progress:records.length,mistakes:mistakes.length,exams:exams.length}));

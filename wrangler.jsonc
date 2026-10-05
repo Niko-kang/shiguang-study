@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "shiguang-study-api",
+  "main": "cloud/index.ts",
+  "compatibility_date": "2026-05-22",
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGIN": "https://niko-kang.github.io"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shiguang-study-records",
+      "migrations_dir": "cloud/migrations"
+    }
+  ]
+}
