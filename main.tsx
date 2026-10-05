@@ -10,6 +10,7 @@ import Timeline from './app/timeline/page';
 import {pageUrl} from './lib/urls';
 import './app/globals.css';
 import './app/unified.css';
+import './app/apple.css';
 const pages:Record<string,[React.ComponentType,string]>={home:[Home,'欢迎回来'],overview:[Overview,'总览'],plan:[Plan,'学习计划'],progress:[Progress,'学习进度'],mistakes:[Mistakes,'错题本'],'mock-exams':[Exams,'模拟考试'],books:[Books,'书单资料'],timeline:[Timeline,'关键时间节点']};
 const route=location.pathname.replace(import.meta.env.BASE_URL,'').replace(/^\/+|\/+$/g,'') || 'home';
 const item=pages[route];
