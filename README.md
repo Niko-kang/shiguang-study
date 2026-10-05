@@ -27,3 +27,7 @@ npm run publish
 主要内容位于 `app/plan.json`、`app/plan-content.ts` 和 `app/overview/page.tsx`，公共样式为 `app/globals.css` 与 `app/unified.css`。接口地址由 `lib/urls.ts` 管理，也可用公开的构建变量 `VITE_API_ORIGIN` 覆盖。该变量只能放接口地址，不可放密钥。
 
 所有子页面输出独立入口，支持直接访问与刷新。导航链接已适配 GitHub 项目路径 `/shiguang-study/`。
+
+## 发布核验
+
+GitHub Pages 构建与部署成功，类型检查、七个子页面入口和本地页面渲染通过。原接口跨域允许来源与预检逻辑已部署并通过本地测试；当前测试环境的线上请求被 Cloudflare 拦截，尚未完成 GitHub 新域名下的真实同步验证。如页面无法连接，会显示错误和“打开原站记录”入口，不会把未保存的记录当成已同步。
