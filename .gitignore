@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env*
 !.env.example
+!.env.production
 .DS_Store
 *.log
 *.tsbuildinfo
@@ -9,3 +10,5 @@ dist/
 
 backups/
 .dev.vars*
+cloud/tencent/.build/
+cloud/tencent/cloudbaserc.json

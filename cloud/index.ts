@@ -22,6 +22,7 @@ export default {
   }
   let response:Response;
   if(!allowed.includes(request.method))response=json({error:'请求方法无效。'},405);
+  else if(request.method==='PUT'&&env.READ_ONLY==='true')response=json({error:'学习记录已迁移，请刷新小翁自习室网页后再保存。'},503);
   else if(path==='/health'){
    try{await env.DB.prepare('SELECT COUNT(*) FROM public_progress').first();await env.DB.prepare('SELECT COUNT(*) FROM learning_entries').first();response=json({ok:true,storage:'owner-cloudflare-d1'})}catch{response=json({error:'数据库尚未初始化。'},503)}
   }else if(path==='/api/space')response=await space.GET(request,env);

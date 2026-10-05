@@ -1,0 +1,4 @@
+{
+  "*": {"invoke": false},
+  "shiguang-study-api": {"invoke": "auth != null"}
+}
