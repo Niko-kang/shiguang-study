@@ -14,7 +14,8 @@ try {
  const branch=git(['ls-remote','--heads',remote,'gh-pages'],undefined,true);
  if(branch)git(['clone','--depth','1','--branch','gh-pages',remote,dir]);
  else {git(['init','-b','gh-pages'],dir);git(['remote','add','origin',remote],dir);}
- for(const name of await readdir(dir))if(name!=='.git')await rm(join(dir,name),{recursive:true,force:true});
+ // Cached HTML can still reference earlier hashed bundles after a release.
+ for(const name of await readdir(dir))if(name!=='.git'&&name!=='assets')await rm(join(dir,name),{recursive:true,force:true});
  await cp('dist',dir,{recursive:true});
  git(['config','user.name',user],dir);git(['config','user.email',email],dir);
  git(['add','--all'],dir);
