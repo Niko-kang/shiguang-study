@@ -1,0 +1,16 @@
+import {createRoot} from 'react-dom/client';
+import Overview from './app/overview/page';
+import Plan from './app/plan/page';
+import Progress from './app/progress/page';
+import Mistakes from './app/mistakes/page';
+import Exams from './app/mock-exams/page';
+import Books from './app/books/page';
+import Timeline from './app/timeline/page';
+import {pageUrl} from './lib/urls';
+import './app/globals.css';
+import './app/unified.css';
+const pages:Record<string,[React.ComponentType,string]>={overview:[Overview,'总览'],plan:[Plan,'学习计划'],progress:[Progress,'学习进度'],mistakes:[Mistakes,'错题本'],'mock-exams':[Exams,'模拟考试'],books:[Books,'书单资料'],timeline:[Timeline,'关键时间节点']};
+const route=location.pathname.replace(import.meta.env.BASE_URL,'').replace(/^\/+|\/+$/g,'') || 'overview';
+const item=pages[route];
+document.title=(item?.[1]||'页面未找到')+' · 拾光自习室';
+createRoot(document.getElementById('root')!).render(item ? (()=>{const Page=item[0];return <Page/>})() : <main className="shell"><h1>页面未找到</h1><a href={pageUrl('/overview/')}>返回总览</a></main>);
