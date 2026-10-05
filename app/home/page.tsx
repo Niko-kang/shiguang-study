@@ -3,7 +3,7 @@ import {pageUrl} from '@/lib/urls';
 import './cover.css';
 
 export default function Home(){return <main className="cover-page">
- <img className="cover-background" src={pageUrl('/assets/study-corner-quiet-breeze.webp')} fetchPriority="high" alt="浅色墙面围着朝海的窗，书桌前的白纱帘被微风轻轻拂动"/>
+ <img className="cover-background" src={pageUrl('/assets/study-corner-soft-breeze.webp')} fetchPriority="high" alt="浅色墙面围着朝海的窗，书桌前的白纱帘被微风轻轻拂动"/>
  <div className="cover-shade" aria-hidden="true"/>
  <header className="cover-header">
   <a className="cover-brand" href={pageUrl('/')} aria-label="小翁自习室首页"><BookOpen size={22} strokeWidth={1.4}/><span>小翁自习室</span></a>
