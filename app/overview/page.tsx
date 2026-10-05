@@ -3,7 +3,7 @@ import {BookOpen,ArrowRight,Clock3,Calculator,Network,PenLine,Languages,ScanText
 import SiteNav from '../site-nav';
 import SiteHeader from '../site-header';
 import SiteFooter from '../site-footer';
-export const metadata={title:'总览 · 拾光自习室'};
+export const metadata={title:'总览 · 小翁自习室'};
 const subjects=[
  {code:'199',name:'管理类综合能力',short:'管综',score:200,tone:'management',parts:[
   {name:'数学基础',score:75,icon:Calculator,text:'算术、代数、几何、数据分析。',detail:'问题求解15题＋条件充分性判断10题，每题3分。'},
