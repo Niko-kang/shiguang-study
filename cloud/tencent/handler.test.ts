@@ -117,3 +117,15 @@ test('public timer responses omit stored IP/device metadata',async()=>{
  const raw=await store.list('study_entries');assert.equal((raw[0].data as any).active.ip,'203.0.113.5');
  const read=await handle({path:'/api/timer',method:'GET'});assert.equal((read.body as any).active.device,undefined);assert.equal((read.body as any).active.networkRegion,undefined);
 });
+
+test('admin fails closed and only exposes owner metadata with the correct key',async()=>{
+ const {createAdminHandler}=await import('./admin');const {createHash}=await import('node:crypto');
+ const {store}=memory();const key='test-key-that-is-long-enough';
+ await store.save('study_progress','2026-10-08',0,{date:'2026-10-08',status:'done',version:1,updatedAt:'original'});
+ const admin=createAdminHandler(store,createHash('sha256').update(key).digest('hex'));
+ assert.equal((await admin({path:'/api/admin',method:'POST',body:{accessKey:'wrong-key-long-enough'}})).status,401);
+ assert.equal((await admin({path:'/api/admin',method:'GET',body:{accessKey:key}})).status,401);
+ const result=await admin({path:'/api/admin',method:'POST',body:{accessKey:key}});assert.equal(result.status,200);assert.equal((result.body as any).progress[0].status,'done');
+ assert.equal((await createAdminHandler(store,undefined)({})).status,503);
+ assert.equal((await store.list('study_progress'))[0].updatedAt,'original');
+});
