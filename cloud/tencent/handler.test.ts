@@ -125,8 +125,11 @@ test('admin fails closed and only exposes owner metadata with the correct key',a
  await store.save('study_progress','2026-10-08',0,{date:'2026-10-08',status:'done',version:1,updatedAt:'original'});
  const admin=createAdminHandler(store,createHash('sha256').update(key).digest('hex'));
  assert.equal((await admin({path:'/api/admin',method:'POST',body:{accessKey:'wrong-key-long-enough'}})).status,401);
+ assert.equal((await admin({path:'/api/admin',method:'POST',body:{accessKey:'1'}})).status,401);
  assert.equal((await admin({path:'/api/admin',method:'GET',body:{accessKey:key}})).status,401);
  const result=await admin({path:'/api/admin',method:'POST',body:{accessKey:key}});assert.equal(result.status,200);assert.equal((result.body as any).progress[0].status,'done');
+ const pin=createAdminHandler(store,createHash('sha256').update('1').digest('hex'));
+ assert.equal((await pin({path:'/api/admin',method:'POST',body:{accessKey:'1'}})).status,200);
  assert.deepEqual((result.body as any).visits,[]);
  assert.equal((await createAdminHandler(store,undefined)({})).status,503);
  assert.equal((await store.list('study_progress'))[0].updatedAt,'original');
