@@ -1,7 +1,7 @@
 import {createHash,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
 import type {Store} from './handler';
-const request=z.object({path:z.literal('/api/admin'),method:z.literal('POST'),body:z.object({accessKey:z.string().min(1).max(160)})});
+const request=z.object({path:z.literal('/api/admin'),method:z.literal('POST'),body:z.object({accessKey:z.string().min(20).max(160)})});
 export function createAdminHandler(store:Store,expectedHash:string|undefined){return async(event:unknown)=>{
  if(!expectedHash||!/^[a-f0-9]{64}$/.test(expectedHash))return {status:503,body:{error:'后台暂未配置。'}};
  const parsed=request.safeParse(event);
