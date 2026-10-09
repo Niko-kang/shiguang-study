@@ -20,5 +20,6 @@ export default function Home(){return <main className="cover-page">
    <a href={pageUrl('/mistakes/')}><span className="cover-dock-icon"><NotebookPen size={23} strokeWidth={1.4}/></span><span>错题本</span></a>
    <a href={pageUrl('/mock-exams/')}><span className="cover-dock-icon"><ClipboardCheck size={23} strokeWidth={1.4}/></span><span>模拟考试</span></a>
   </nav>
+  <aside className="cover-usage" id="usage-notice" aria-label="使用说明"><b>使用说明</b><p>打卡会记录时间、设备和公网 IP，并由 ipwho.is 推测大致地区。仅为网络所在地推测，可能有偏差；不获取手机精确定位。</p><small>学习记录保存在云端，可在不同设备同步查看。</small></aside>
  </footer>
  </main>}

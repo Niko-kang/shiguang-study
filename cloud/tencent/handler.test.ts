@@ -5,7 +5,7 @@ import {createStore} from './store';
 
 function memory(){
  const rows=new Map<string,Row>();
- const store:Store={async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
+ const store:Store={async saveCheckin(id,v,row,date){const key='study_entries/'+id;if((rows.get(key)?.version??0)!==v)return false;const progressKey='study_progress/'+date,previous=rows.get(progressKey);rows.set(key,structuredClone(row));if(previous?.status!=='done')rows.set(progressKey,{...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});return true;},async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
  return {store,rows};
 }
 test('progress persists and a competing device cannot overwrite the winner',async()=>{
@@ -54,4 +54,66 @@ test('CloudBase adapter handles transaction single-document reads and paginates 
  assert.equal(await store.save('study_entries','id',0,{kind:'exam',version:1,updatedAt:'x'}),false);
  assert.equal(await store.save('study_entries','id',1,{kind:'mistake',version:2,updatedAt:'x'}),false);
  assert.equal(writes.length,1);
+});
+
+test('timer pauses, survives reload, cancels without changing existing progress, and saves separately',async()=>{
+ const {store}=memory();const {updateTimer,readTimer}=await import('./timer');const days=new Set(['2026-10-08']);
+ await store.save('study_progress','2026-10-08',0,{date:'2026-10-08',status:'done',version:1,updatedAt:'old'});
+ let version=0;const at=(minutes:number)=>new Date(Date.parse('2026-10-09T10:00:00Z')+minutes*60000);
+ const send=async(action:string,minute:number,extra:object={})=>{const r=await updateTimer(store,{action,version,...extra},days,at(minute));if(r.status===200)version++;return r};
+ assert.equal((await send('start',0,{date:'2026-10-08'})).status,200);
+ assert.equal((await send('pause',10)).status,200);
+ assert.equal((await readTimer(store)).active?.elapsedMs,600000);
+ assert.equal((await send('resume',20)).status,200);
+ assert.equal((await send('stop',30)).status,200);
+ assert.equal((await readTimer(store)).sessions.length,0);
+ // An accidental end can be resumed; review time is excluded.
+ assert.equal((await send('resume',40)).status,200);
+ assert.equal((await send('stop',45)).status,200);
+ assert.equal((await send('save',45,{note:'数学'})).status,200);
+ const saved=await readTimer(store);assert.equal(saved.sessions[0].durationMs,25*60000);assert.equal(saved.active,null);
+ assert.equal((await send('start',50,{date:'2026-10-08'})).status,200);
+ assert.equal((await send('cancel',55)).status,200);
+ assert.equal((await readTimer(store)).sessions.length,1);
+ assert.equal((await store.list('study_progress'))[0].status,'done');assert.equal((await store.list('study_progress'))[0].version,1);
+ const id=saved.sessions[0].id;
+ assert.equal((await send('edit',60,{id,date:'2026-10-08',startedAt:at(0).toISOString(),endedAt:at(45).toISOString(),durationMs:20*60000,note:'修正'})).status,200);
+ assert.equal((await readTimer(store)).sessions[0].adjusted,true);
+ assert.equal((await send('delete',60,{id})).status,200);
+ assert.equal((await readTimer(store)).sessions[0].deleted,true);
+ assert.equal((await send('restore',60,{id})).status,200);
+ assert.equal((await readTimer(store)).sessions[0].deleted,false);
+});
+test('timer validates times and prevents duplicate concurrent starts/saves',async()=>{
+ const {store}=memory();const {updateTimer,readTimer}=await import('./timer');const days=new Set(['2026-10-08']),now=new Date('2026-10-09T10:00:00Z');
+ const results=await Promise.all([1,2].map(()=>updateTimer(store,{action:'start',date:'2026-10-08',version:0},days,now)));
+ assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+ assert.equal((await updateTimer(store,{action:'stop',version:1},days,new Date(now.getTime()+60000))).status,200);
+ const saves=await Promise.all([1,2].map(()=>updateTimer(store,{action:'save',version:2},days,new Date(now.getTime()+61000))));
+ assert.deepEqual(saves.map(r=>r.status).sort(),[200,409]);assert.equal((await readTimer(store)).sessions.length,1);
+ assert.equal((await updateTimer(store,{action:'manual',version:3,date:'2026-10-08',startedAt:now.toISOString(),endedAt:new Date(now.getTime()+3600000).toISOString(),durationMs:60000},days,now)).status,400);
+ assert.equal((await updateTimer(store,{action:'manual',version:3,date:'2026-10-08',startedAt:new Date(now.getTime()-60000).toISOString(),endedAt:now.toISOString(),durationMs:120000},days,now)).status,400);
+});
+
+test('confirm check-in atomically completes its task; pause, cancel and edits never complete another task',async()=>{
+ const {store}=memory();const {updateTimer,readTimer}=await import('./timer');const days=new Set(['2026-10-08','2026-10-10']);const start=new Date('2026-10-09T10:00:00Z'),end=new Date('2026-10-09T10:30:00Z');
+ await store.save('study_progress','2026-10-08',0,{date:'2026-10-08',status:'done',version:1,updatedAt:'original'});
+ assert.equal((await updateTimer(store,{action:'start',date:'2026-10-10',version:0},days,start)).status,200);
+ assert.equal((await updateTimer(store,{action:'stop',version:1},days,end)).status,200);
+ assert.equal((await store.list('study_progress')).length,1);
+ assert.equal((await updateTimer(store,{action:'save',version:2},days,end)).status,200);
+ assert.equal((await store.list('study_progress')).find(r=>r.date==='2026-10-10')?.status,'done');
+ assert.equal((await store.list('study_progress')).find(r=>r.date==='2026-10-08')?.updatedAt,'original');
+ const before=await readTimer(store);
+ const refusing={...store,async saveCheckin(){return false}};
+ assert.equal((await updateTimer(refusing,{action:'manual',version:before.version,date:'2026-10-10',startedAt:start.toISOString(),endedAt:end.toISOString(),durationMs:60000},days,end)).status,409);
+ assert.deepEqual(await readTimer(store),before);
+});
+
+test('public timer responses omit stored IP/device metadata',async()=>{
+ const {store}=memory(),handle=createHandler(store);
+ const started=await handle({path:'/api/timer',method:'PUT',body:{action:'start',version:0,date:'2026-10-08',device:'test-device',ip:'203.0.113.5',networkRegion:'test-region'}});
+ assert.equal(started.status,200);assert.equal((started.body as any).active.ip,undefined);
+ const raw=await store.list('study_entries');assert.equal((raw[0].data as any).active.ip,'203.0.113.5');
+ const read=await handle({path:'/api/timer',method:'GET'});assert.equal((read.body as any).active.device,undefined);assert.equal((read.body as any).active.networkRegion,undefined);
 });

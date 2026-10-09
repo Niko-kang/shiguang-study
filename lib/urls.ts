@@ -2,6 +2,7 @@ export function pageUrl(path: string) { return import.meta.env.BASE_URL.replace(
 export function apiUrl(path: string) { return (import.meta.env.VITE_API_ORIGIN || 'https://shiguang-study-api.niko-kang.workers.dev').replace(/\/$/, '') + path; }
 export async function apiFetch(path: string, init?: RequestInit) {
   try {
+    if(import.meta.env.VITE_DATA_PROVIDER==='preview'){const {previewFetch}=await import('./preview');return previewFetch(path,init);}
     if(import.meta.env.VITE_DATA_PROVIDER==='cloudbase'){
       const {tencentFetch}=await import('./tencent');
       return await tencentFetch(path,init);

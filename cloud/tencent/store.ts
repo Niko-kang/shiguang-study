@@ -4,6 +4,17 @@ type Database=ReturnType<ReturnType<typeof cloudbase.init>['database']>;
 type Transaction={collection(name:string):{doc(id:string):{get():Promise<{data:Row|null}>;set(data:Row):Promise<unknown>}}};
 export function createStore(db:Database):Store{
  return {
+  async saveCheckin(id,expectedVersion,row,date){
+   return db.runTransaction(async(tx:Transaction)=>{
+    const timer=tx.collection('study_entries').doc(id),progress=tx.collection('study_progress').doc(date);
+    const {data:current}=await timer.get();
+    if((current?.version??0)!==expectedVersion||current&&current.kind!=='timer')return false;
+    const {data:previous}=await progress.get();
+    await timer.set(row);
+    if(previous?.status!=='done')await progress.set({...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});
+    return true;
+   });
+  },
   async list(collection:Collection){
    const rows:Row[]=[];let cursor='';
    for(let page=0;page<100;page++){
