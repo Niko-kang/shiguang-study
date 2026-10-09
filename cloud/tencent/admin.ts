@@ -11,9 +11,9 @@ export function createAdminHandler(store:Store,expectedHash:string|undefined){re
  try{const [progress,entries,visits]=await Promise.all([
   store.list('study_progress'),
   store.list('study_entries'),
-  store.listVisits().catch(()=>[])
+  store.listVisits()
  ]);
  const timer=entries.find(r=>r.id==='shared-study-timer');
  return {status:200,body:{fetchedAt:new Date().toISOString(),progress,timer:timer?.data||{active:null,sessions:[]},entries:entries.filter(r=>r.kind==='mistake'||r.kind==='exam'),visits}};
- }catch{return {status:503,body:{error:'云端读取失败，请稍后重试。'}}}
+ }catch(error){console.error('Admin database read failed',error instanceof Error?error.message:String(error));return {status:503,body:{error:'云端读取失败，请稍后重试。'}}}
 }}

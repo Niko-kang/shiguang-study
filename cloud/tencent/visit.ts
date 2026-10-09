@@ -46,7 +46,7 @@ export async function recordVisit(store:Store,body:unknown){
   platform:clip(b.platform),
   screen:clip(b.screen),
   viewport:clip(b.viewport),
-  pixelRatio:b.pixelRatio,
+  ...(b.pixelRatio===undefined?{}:{pixelRatio:b.pixelRatio}),
   sessionId:clip(b.sessionId),
   visitorId:clip(b.visitorId),
   ip:clip(b.ip),
