@@ -5,8 +5,9 @@ import {createStore} from './store';
 
 function memory(){
  const rows=new Map<string,Row>();
- const store:Store={async saveCheckin(id,v,row,date){const key='study_entries/'+id;if((rows.get(key)?.version??0)!==v)return false;const progressKey='study_progress/'+date,previous=rows.get(progressKey);rows.set(key,structuredClone(row));if(previous?.status!=='done')rows.set(progressKey,{...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});return true;},async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
- return {store,rows};
+ const visits:import('./handler').Visit[]=[];
+ const store:Store={async saveCheckin(id,v,row,date){const key='study_entries/'+id;if((rows.get(key)?.version??0)!==v)return false;const progressKey='study_progress/'+date,previous=rows.get(progressKey);rows.set(key,structuredClone(row));if(previous?.status!=='done')rows.set(progressKey,{...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});return true;},async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async listVisits(){return visits.map(v=>structuredClone(v))},async addVisit(visit){visits.push(structuredClone(visit))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
+ return {store,rows,visits};
 }
 test('progress persists and a competing device cannot overwrite the winner',async()=>{
  const {store}=memory(),handle=createHandler(store);
@@ -47,7 +48,7 @@ test('invalid requests and unavailable storage fail closed; migration mode refus
 test('CloudBase adapter handles transaction single-document reads and paginates past 100 rows',async()=>{
  const rows=Array.from({length:101},(_,i)=>({_id:String(i).padStart(3,'0'),version:1,updatedAt:'2026-10-05T00:00:00Z'}));
  let persisted:Row|null=null;const writes:Row[]=[];
- const db={command:{gt:(x:string)=>x},collection(){let after='';return {where(q:any){after=q._id;return this},orderBy(){return this},limit(){return this},async get(){return {data:rows.filter(r=>r._id>after).slice(0,100)}}}},async runTransaction(fn:any){return fn({collection:()=>({doc:()=>({get:async()=>({data:persisted}),set:async(row:Row)=>{persisted=row;writes.push(row)}})})})}};
+ const db={command:{gt:(x:string)=>x,lt:(x:string)=>x},collection(){let after='';return {where(q:any){after=q._id;return this},orderBy(){return this},limit(){return this},async get(){return {data:rows.filter(r=>r._id>after).slice(0,100)}}}},async runTransaction(fn:any){return fn({collection:()=>({doc:()=>({get:async()=>({data:persisted}),set:async(row:Row)=>{persisted=row;writes.push(row)}})})})}};
  const store=createStore(db as any);
  assert.equal((await store.list('study_entries')).length,101);
  assert.equal(await store.save('study_entries','id',0,{kind:'exam',version:1,updatedAt:'x'}),true);
@@ -126,6 +127,30 @@ test('admin fails closed and only exposes owner metadata with the correct key',a
  assert.equal((await admin({path:'/api/admin',method:'POST',body:{accessKey:'wrong-key-long-enough'}})).status,401);
  assert.equal((await admin({path:'/api/admin',method:'GET',body:{accessKey:key}})).status,401);
  const result=await admin({path:'/api/admin',method:'POST',body:{accessKey:key}});assert.equal(result.status,200);assert.equal((result.body as any).progress[0].status,'done');
+ assert.deepEqual((result.body as any).visits,[]);
  assert.equal((await createAdminHandler(store,undefined)({})).status,503);
  assert.equal((await store.list('study_progress'))[0].updatedAt,'original');
+});
+
+test('visits are stored privately and omitted from public learning APIs',async()=>{
+ const {store,visits}=memory(),handle=createHandler(store);
+ assert.equal((await handle({path:'/api/visit',method:'GET'})).status,405);
+ assert.equal((await handle({path:'/api/visit',method:'PUT',body:{}})).status,400);
+ const saved=await handle({path:'/api/visit',method:'PUT',body:{path:'/plan/',title:'学习计划',href:'https://niko-kang.github.io/shiguang-study/plan/',referrer:'https://www.google.com/',language:'zh-CN',timezone:'Asia/Shanghai',device:'电脑 · macOS · Chrome',userAgent:'Mozilla/5.0',screen:'1440x900',viewport:'1200x800',sessionId:'session-1',visitorId:'visitor-1',ip:'203.0.113.8',networkRegion:'中国 · 上海 · 上海'}});
+ assert.equal(saved.status,200);
+ assert.equal(visits.length,1);
+ assert.equal(visits[0].path,'/plan/');
+ assert.equal(visits[0].ip,'203.0.113.8');
+ const space=await handle({path:'/api/space',method:'GET'});
+ assert.equal(space.status,200);
+ assert.equal(JSON.stringify(space.body).includes('203.0.113.8'),false);
+ const timer=await handle({path:'/api/timer',method:'GET'});
+ assert.equal(JSON.stringify(timer.body).includes('visitor-1'),false);
+ const {createAdminHandler}=await import('./admin');const {createHash}=await import('node:crypto');
+ const key='test-key-that-is-long-enough';
+ const admin=createAdminHandler(store,createHash('sha256').update(key).digest('hex'));
+ const snapshot=await admin({path:'/api/admin',method:'POST',body:{accessKey:key}});
+ assert.equal(snapshot.status,200);
+ assert.equal((snapshot.body as any).visits[0].ip,'203.0.113.8');
+ assert.equal((snapshot.body as any).visits[0].path,'/plan/');
 });

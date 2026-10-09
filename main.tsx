@@ -8,6 +8,7 @@ import Exams from './app/mock-exams/page';
 import Books from './app/books/page';
 import Timeline from './app/timeline/page';
 import {pageUrl} from './lib/urls';
+import {recordVisit} from './lib/visit-log';
 import './app/globals.css';
 import './app/unified.css';
 import './app/apple.css';
@@ -16,3 +17,4 @@ const route=location.pathname.replace(import.meta.env.BASE_URL,'').replace(/^\/+
 const item=pages[route];
 document.title=(item?.[1]||'页面未找到')+' · 小翁自习室';
 createRoot(document.getElementById('root')!).render(item ? (()=>{const Page=item[0];return <Page/>})() : <main className="shell"><h1>页面未找到</h1><a href={pageUrl('/overview/')}>返回总览</a></main>);
+recordVisit();

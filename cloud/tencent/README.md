@@ -40,10 +40,16 @@ test sessions are imported. Pre-release snapshots and verification output are
 under ignored `backups/checkin-release-20261009/`.
 
 Device labels are client-reported, not proof of identity or exact phone models.
-IP and approximate region are requested from ipwho.is at start/manual check-in,
-with a five-second timeout and graceful failure. The home page discloses this.
-Metadata remains in the owner's database and is omitted from all public timer
-responses. No precise geolocation is requested.
+IP and approximate region are requested from ipwho.is at start/manual check-in
+and on each production page load for private visit logs, with a five-second
+timeout and graceful failure. Visit rows are written to `study_visits` and are
+returned only by `/api/admin`. Public timer, progress and learning responses
+omit visit data. The study website does not display visit logs. No precise
+geolocation is requested.
+
+Create the `study_visits` collection with the same ADMINONLY client rules as
+the other collections, then rebuild and deploy `shiguang-study-api`. The
+independent admin site reads visits after the access key is verified.
 
 The separate shiguang-study-test project remains browser-only. Local preview
 mode also uses isolated browser storage. Production builds must use the public

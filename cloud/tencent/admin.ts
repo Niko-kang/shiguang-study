@@ -8,8 +8,12 @@ export function createAdminHandler(store:Store,expectedHash:string|undefined){re
  if(!parsed.success)return {status:401,body:{error:'请输入有效的后台访问密钥。'}};
  const hash=createHash('sha256').update(parsed.data.body.accessKey).digest();
  if(!timingSafeEqual(hash,Buffer.from(expectedHash,'hex')))return {status:401,body:{error:'访问密钥不正确。'}};
- try{const [progress,entries]=await Promise.all([store.list('study_progress'),store.list('study_entries')]);
+ try{const [progress,entries,visits]=await Promise.all([
+  store.list('study_progress'),
+  store.list('study_entries'),
+  store.listVisits().catch(()=>[])
+ ]);
  const timer=entries.find(r=>r.id==='shared-study-timer');
- return {status:200,body:{fetchedAt:new Date().toISOString(),progress,timer:timer?.data||{active:null,sessions:[]},entries:entries.filter(r=>r.kind==='mistake'||r.kind==='exam')}};
+ return {status:200,body:{fetchedAt:new Date().toISOString(),progress,timer:timer?.data||{active:null,sessions:[]},entries:entries.filter(r=>r.kind==='mistake'||r.kind==='exam'),visits}};
  }catch{return {status:503,body:{error:'云端读取失败，请稍后重试。'}}}
 }}

@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Play,Pause,Square,Clock3,Plus,RotateCcw} from 'lucide-react';
+import {deviceLabel} from '@/lib/device';
 import {lookupNetworkRegion} from '@/lib/network-region';
 import {apiFetch} from '@/lib/urls';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
@@ -7,7 +8,6 @@ import {chinaDay,durationText,elapsed,type Session,type TimerState} from './stud
 import plan from './plan.json';
 import './study-timer.css';
 const days=plan.flatMap(w=>w.days).filter(d=>d.kind==='study');
-function deviceLabel(){const ua=navigator.userAgent;const os=/iPhone/.test(ua)?'iPhone · iOS':/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)?'iPad · iPadOS':/Android/.test(ua)?'Android 手机/平板':/Windows/.test(ua)?'电脑 · Windows':/Macintosh/.test(ua)?'电脑 · macOS':/Linux/.test(ua)?'电脑 · Linux':'未知设备';const browser=/MicroMessenger/.test(ua)?'微信':/Edg/.test(ua)?'Edge':/CriOS|Chrome/.test(ua)?'Chrome':/FxiOS|Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':'浏览器';return os+' · '+browser}
 const defaultDate=()=>days.find(d=>d.date>=chinaDay())?.date||days[days.length-1].date;
 function localTime(s:string){const d=new Date(Date.parse(s)+8*3600000);return d.toISOString().slice(0,19)}
 function iso(s:string){return new Date(s+'+08:00').toISOString()}
