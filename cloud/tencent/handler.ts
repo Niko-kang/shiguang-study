@@ -10,6 +10,7 @@ export type Visit={id:string;at:string;path:string;[key:string]:unknown};
 export interface Store {
  saveCheckin(id:string,expectedVersion:number,row:Row,date:string):Promise<boolean>;
  list(collection:Collection):Promise<Row[]>;
+ setVisitsDeleted(ids:string[],deleted:boolean):Promise<void>;
  setVisitDeleted(id:string,deleted:boolean):Promise<void>;
  listVisits():Promise<Visit[]>;
  addVisit(visit:Visit):Promise<void>;

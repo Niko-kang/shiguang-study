@@ -18,6 +18,7 @@ export function createStore(db:Database):Store{
   async addVisit(visit:Visit){
    await db.collection('study_visits').doc(visit.id).set(visit);
   },
+  async setVisitsDeleted(ids,deleted){for(let i=0;i<ids.length;i+=100){await db.collection('study_visits').where({_id:db.command.in(ids.slice(i,i+100))}).update({deleted,deletedAt:deleted?new Date().toISOString():null});}},
   async setVisitDeleted(id,deleted){await db.collection('study_visits').doc(id).update({deleted,deletedAt:deleted?new Date().toISOString():null});},
   async listVisits(){
    const rows:Visit[]=[];let cursor='';

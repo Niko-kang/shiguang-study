@@ -1,14 +1,19 @@
 import {createHash,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
 import type {Store} from './handler';
-const request=z.object({path:z.literal('/api/admin'),method:z.literal('POST'),body:z.object({accessKey:z.string().min(20).max(160),action:z.enum(['deleteVisit','restoreVisit']).optional(),id:z.string().min(1).max(150).regex(/^[A-Za-z0-9_.:\-]+$/).optional()})});
+const request=z.object({path:z.literal('/api/admin'),method:z.literal('POST'),body:z.object({accessKey:z.string().min(20).max(160),action:z.enum(['deleteVisit','restoreVisit','deleteVisits','restoreVisits']).optional(),ids:z.array(z.string().min(1).max(150).regex(/^[A-Za-z0-9_.:\-]+$/)).min(1).max(500).optional(),id:z.string().min(1).max(150).regex(/^[A-Za-z0-9_.:\-]+$/).optional()})});
 export function createAdminHandler(store:Store,expectedHash:string|undefined){return async(event:unknown)=>{
  if(!expectedHash||!/^[a-f0-9]{64}$/.test(expectedHash))return {status:503,body:{error:'后台暂未配置。'}};
  const parsed=request.safeParse(event);
  if(!parsed.success)return {status:401,body:{error:'请输入有效的后台访问密钥。'}};
  const hash=createHash('sha256').update(parsed.data.body.accessKey).digest();
  if(!timingSafeEqual(hash,Buffer.from(expectedHash,'hex')))return {status:401,body:{error:'访问密钥不正确。'}};
- try{if(parsed.data.body.action){if(!parsed.data.body.id)return {status:400,body:{error:'缺少记录编号。'}};await store.setVisitDeleted(parsed.data.body.id,parsed.data.body.action==='deleteVisit');}
+ try{const {action,id,ids}=parsed.data.body;if(action){
+ if(action==='deleteVisits'||action==='restoreVisits'){
+  if(!ids?.length)return {status:400,body:{error:'请先选择访问记录。'}};
+  await store.setVisitsDeleted([...new Set(ids)],action==='deleteVisits');
+ }else{if(!id)return {status:400,body:{error:'缺少记录编号。'}};await store.setVisitDeleted(id,action==='deleteVisit');}
+ }
  const [progress,entries,visits]=await Promise.all([
   store.list('study_progress'),
   store.list('study_entries'),

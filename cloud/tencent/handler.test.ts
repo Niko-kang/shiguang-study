@@ -6,7 +6,7 @@ import {createStore} from './store';
 function memory(){
  const rows=new Map<string,Row>();
  const visits:import('./handler').Visit[]=[];
- const store:Store={async saveCheckin(id,v,row,date){const key='study_entries/'+id;if((rows.get(key)?.version??0)!==v)return false;const progressKey='study_progress/'+date,previous=rows.get(progressKey);rows.set(key,structuredClone(row));if(previous?.status!=='done')rows.set(progressKey,{...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});return true;},async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async setVisitDeleted(id,deleted){const row=visits.find(v=>v.id===id);if(row)row.deleted=deleted},async listVisits(){return visits.map(v=>structuredClone(v))},async addVisit(visit){visits.push(structuredClone(visit))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
+ const store:Store={async saveCheckin(id,v,row,date){const key='study_entries/'+id;if((rows.get(key)?.version??0)!==v)return false;const progressKey='study_progress/'+date,previous=rows.get(progressKey);rows.set(key,structuredClone(row));if(previous?.status!=='done')rows.set(progressKey,{...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});return true;},async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async setVisitsDeleted(ids,deleted){for(const row of visits)if(ids.includes(row.id))row.deleted=deleted},async setVisitDeleted(id,deleted){const row=visits.find(v=>v.id===id);if(row)row.deleted=deleted},async listVisits(){return visits.map(v=>structuredClone(v))},async addVisit(visit){visits.push(structuredClone(visit))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
  return {store,rows,visits};
 }
 test('progress persists and a competing device cannot overwrite the winner',async()=>{
@@ -170,4 +170,18 @@ test('admin visit deletion is authenticated, recoverable and leaves learning dat
  assert.equal((await call(accessKey,'restoreVisit')).status,200);
  assert.equal(visits[0].deleted,false);
  assert.equal(rows.size,0);
+});
+
+test('bulk visit deletion affects only selected visits and supports restoration',async()=>{
+ const {store,visits}=memory();const {createAdminHandler}=await import('./admin');const {createHash}=await import('node:crypto');
+ const accessKey='test-bulk-key-at-least-20-characters';const admin=createAdminHandler(store,createHash('sha256').update(accessKey).digest('hex'));
+ for(const id of ['a','b','c'])visits.push({id,at:new Date().toISOString(),path:'/'});
+ const call=(action:string,ids:string[],key=accessKey)=>admin({path:'/api/admin',method:'POST',body:{accessKey:key,action,ids}});
+ assert.equal((await call('deleteVisits',['a','b'],'incorrect-key-long-enough')).status,401);
+ assert.equal(visits[0].deleted,undefined);
+ assert.equal((await call('deleteVisits',['a','b','a'])).status,200);
+ assert.deepEqual(visits.map(v=>v.deleted),[true,true,undefined]);
+ assert.equal((await call('restoreVisits',['a','b'])).status,200);
+ assert.deepEqual(visits.map(v=>v.deleted),[false,false,undefined]);
+ assert.notEqual((await call('deleteVisits',[])).status,200);
 });
