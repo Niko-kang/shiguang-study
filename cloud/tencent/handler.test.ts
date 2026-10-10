@@ -6,7 +6,7 @@ import {createStore} from './store';
 function memory(){
  const rows=new Map<string,Row>();
  const visits:import('./handler').Visit[]=[];
- const store:Store={async saveCheckin(id,v,row,date){const key='study_entries/'+id;if((rows.get(key)?.version??0)!==v)return false;const progressKey='study_progress/'+date,previous=rows.get(progressKey);rows.set(key,structuredClone(row));if(previous?.status!=='done')rows.set(progressKey,{...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});return true;},async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async listVisits(){return visits.map(v=>structuredClone(v))},async addVisit(visit){visits.push(structuredClone(visit))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
+ const store:Store={async saveCheckin(id,v,row,date){const key='study_entries/'+id;if((rows.get(key)?.version??0)!==v)return false;const progressKey='study_progress/'+date,previous=rows.get(progressKey);rows.set(key,structuredClone(row));if(previous?.status!=='done')rows.set(progressKey,{...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});return true;},async list(c){return [...rows.entries()].filter(([id])=>id.startsWith(c+'/')).map(([,r])=>structuredClone(r))},async setVisitDeleted(id,deleted){const row=visits.find(v=>v.id===id);if(row)row.deleted=deleted},async listVisits(){return visits.map(v=>structuredClone(v))},async addVisit(visit){visits.push(structuredClone(visit))},async save(c,id,v,row){const key=c+'/'+id,old=rows.get(key);if((old?.version??0)!==v||(old&&old.kind!==row.kind))return false;rows.set(key,structuredClone(row));return true}};
  return {store,rows,visits};
 }
 test('progress persists and a competing device cannot overwrite the winner',async()=>{
@@ -153,4 +153,21 @@ test('visits are stored privately and omitted from public learning APIs',async()
  assert.equal(snapshot.status,200);
  assert.equal((snapshot.body as any).visits[0].ip,'203.0.113.8');
  assert.equal((snapshot.body as any).visits[0].path,'/plan/');
+});
+
+test('admin visit deletion is authenticated, recoverable and leaves learning data intact',async()=>{
+ const {store,visits,rows}=memory();
+ const {createAdminHandler}=await import('./admin');
+ const {createHash}=await import('node:crypto');
+ const accessKey='test-admin-key-at-least-20-characters';
+ const admin=createAdminHandler(store,createHash('sha256').update(accessKey).digest('hex'));
+ visits.push({id:'visit-1',at:new Date().toISOString(),path:'/'});
+ const call=(key:string,action:string)=>admin({path:'/api/admin',method:'POST',body:{accessKey:key,action,id:'visit-1'}});
+ assert.equal((await call('wrong-key-long-enough','deleteVisit')).status,401);
+ assert.equal(visits[0].deleted,undefined);
+ assert.equal((await call(accessKey,'deleteVisit')).status,200);
+ assert.equal(visits[0].deleted,true);
+ assert.equal((await call(accessKey,'restoreVisit')).status,200);
+ assert.equal(visits[0].deleted,false);
+ assert.equal(rows.size,0);
 });
