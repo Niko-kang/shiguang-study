@@ -45,3 +45,8 @@ body{background:#f2f7f9}
 .site-footer{border-color:#d8e5eb;color:#6b818d}
 .cover-primary{background:linear-gradient(120deg,#276c92,#348993)!important;box-shadow:0 8px 24px #224e7226!important;color:#fff!important}.cover-dock a:nth-child(1) .cover-dock-icon{color:#3b789d}.cover-dock a:nth-child(2) .cover-dock-icon{color:#a37c42}.cover-dock a:nth-child(3) .cover-dock-icon{color:#458a7d}.cover-dock a:nth-child(4) .cover-dock-icon{color:#8673a5}
 @media(max-width:760px){.week-rail{background:#eaf3f6}.week-button.active{background:#dceef5}.shell{background:radial-gradient(ellipse 450px 450px at 100% 150px,#f8ebda70,transparent),#f3f8fa}}
+/* Warm accents balance the existing coastal blue without recoloring task states. */
+.shell{background:radial-gradient(ellipse 650px 380px at 95% 170px,#f1dfe660,transparent),radial-gradient(ellipse 800px 600px at 0 280px,#d7edf075,transparent),#f7f9fa}
+.overview-destinations>a:nth-child(3){background:#faf0ef}.overview-destinations>a:nth-child(3) .destination-icon{background:#f0dde0;color:#a47680}
+.book-card:nth-child(3n) .book-number{background:linear-gradient(145deg,#f5e2e5,#e9cbd2);color:#966d7b;box-shadow:inset 3px 0 #d4aeb9}
+.exam-reminder{background:linear-gradient(115deg,#faf0e8,#fbf3ef);border-color:#edddd0}

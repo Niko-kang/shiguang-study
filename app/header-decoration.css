@@ -2,7 +2,7 @@
 .unified-header.refined-masthead{position:relative;isolation:isolate;height:88px;min-height:88px;background:#f8fbfc;border-bottom:1px solid #dce7eb}
 .header-seascape{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background:radial-gradient(ellipse at 73% 20%,#f8e5c380,transparent 32%),radial-gradient(ellipse at 48% 115%,#a9dce657,transparent 47%),linear-gradient(100deg,#fbfcfd 20%,#eff7f9 57%,#fcfaf5)}
 .header-seascape svg{position:absolute;right:12%;bottom:0;width:61%;height:100%;mask-image:linear-gradient(90deg,transparent,#000 25%,#000 78%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 25%,#000 78%,transparent)}
-.header-seascape g{stroke:#70aabb;opacity:.46}.header-seascape g path:nth-child(2){stroke:#8ebcb6}.header-water{fill:#b7dfe7;opacity:.15}
+.header-seascape>svg:not(.header-garden) g{stroke:#70aabb;opacity:.46}.header-seascape>svg:not(.header-garden) g path:nth-child(2){stroke:#8ebcb6}.header-water{fill:#b7dfe7;opacity:.15}
 .header-sun{position:absolute;left:73%;top:13px;width:30px;height:30px;border-radius:50%;border:1px solid #d9b47d52;background:linear-gradient(150deg,#f9e7cdae,#f8ecd94d);box-shadow:0 0 28px 12px #f7e8d157}
 .unified-header.refined-masthead>.brand,.unified-header.refined-masthead>.header-actions{position:relative;z-index:1}
 .unified-header.refined-masthead .refined-brand{gap:13px}
@@ -16,3 +16,18 @@
 .unified-header.refined-masthead .site-overview-button:hover{background:#fff;border-color:#9fbdcc;box-shadow:0 4px 14px #40697d12}
 .unified-header.refined-masthead .header-button-arrow{height:12px;width:12px;color:#869da9;margin-left:3px}
 @media(max-width:760px){.unified-header.refined-masthead{height:76px;min-height:76px;padding-inline:20px}.unified-header.refined-masthead .refined-brand{gap:10px}.unified-header.refined-masthead .refined-brand .brand-icon{height:37px;width:37px;border-radius:12px}.unified-header.refined-masthead .refined-brand .brand-icon svg{height:22px;width:22px}.unified-header.refined-masthead .refined-brand b{font-size:17px;letter-spacing:.5px}.unified-header.refined-masthead .refined-brand small{font-size:8px;letter-spacing:.6px}.header-seascape svg{right:6%;width:58%;opacity:.7}.header-sun{left:69%;top:14px;width:23px;height:23px}.unified-header.refined-masthead .site-overview-button{padding:7px 11px;gap:6px;font-size:11px}.unified-header.refined-masthead .header-button-arrow{display:none}}
+/* Pearl, botanical linework and a small shell vignette. */
+.unified-header.refined-masthead{height:106px;min-height:106px;border-bottom-color:#e5ded7;background:#fcfaf8}
+.header-seascape{background:radial-gradient(ellipse at 41% 0%,#e9cdd750,transparent 46%),radial-gradient(ellipse at 75% 20%,#f3e0b975,transparent 34%),radial-gradient(ellipse at 58% 110%,#b7dce357,transparent 48%),linear-gradient(100deg,#fcfbf9,#f4f8f9 52%,#fbf7f0)}
+.header-seascape>svg:not(.header-garden){height:74%;opacity:.6;right:15%;width:60%}
+.header-seascape .header-garden{width:490px;height:140px;top:-12px;bottom:auto;right:21%;opacity:.85;mask-image:linear-gradient(90deg,transparent,#000 12%,#000 85%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 85%,transparent)}
+.header-garden g{opacity:1}.header-garden g path:nth-child(2){stroke:inherit}
+.header-sun{display:none}
+.unified-header.refined-masthead .refined-brand{gap:16px}
+.unified-header.refined-masthead .refined-brand .brand-icon{position:relative;width:54px;height:58px;border-radius:20px 20px 17px 17px;background:linear-gradient(145deg,#fffdf9,#f0e8e5 48%,#e8f2f4);color:#5d7782;border:1px solid #d6c6ae;box-shadow:inset 0 0 0 4px #fffaf780,0 4px 12px #8c777815}
+.unified-header.refined-masthead .refined-brand .brand-icon:before{content:'';position:absolute;inset:6px;border:1px solid #c5ad864f;border-radius:15px 15px 12px 12px;pointer-events:none}
+.unified-header.refined-masthead .refined-brand .brand-icon:after{content:'✦';position:absolute;top:-8px;right:-4px;font-size:13px;color:#b99561;text-shadow:0 1px #fff}
+.unified-header.refined-masthead .refined-brand b{font-size:21px;letter-spacing:1.8px;color:#385365;font-weight:600}
+.unified-header.refined-masthead .refined-brand small{color:#998b83;font-size:9px;letter-spacing:1.5px;margin-top:7px}
+.unified-header.refined-masthead .site-overview-button{height:38px;background:linear-gradient(135deg,#fffdfb,#f5f0e9);border-color:#d9cbb9;color:#71634f;box-shadow:inset 0 1px #fff,0 4px 10px #9a846412}
+@media(max-width:760px){.unified-header.refined-masthead{height:86px;min-height:86px;padding-inline:20px}.unified-header.refined-masthead .refined-brand{gap:12px}.unified-header.refined-masthead .refined-brand .brand-icon{width:40px;height:44px;border-radius:15px}.unified-header.refined-masthead .refined-brand .brand-icon:before{inset:4px;border-radius:11px}.unified-header.refined-masthead .refined-brand b{font-size:17px;letter-spacing:.7px}.unified-header.refined-masthead .refined-brand small{font-size:8px;letter-spacing:.6px;margin-top:5px}.header-seascape .header-garden{right:8%;top:-4px;width:225px;height:98px;opacity:.5;mask-image:linear-gradient(90deg,transparent,#000 50%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 50%,transparent)}.unified-header.refined-masthead .site-overview-button{height:34px}.header-seascape>svg:not(.header-garden){right:0;width:65%}}
