@@ -1,6 +1,10 @@
-/* A quiet coastal engraving; decoration never participates in hit testing. */
+/* Soft coastal color, with pointer-transparent ornamental linework. */
 .unified-header{position:relative;isolation:isolate}
-.header-seascape{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background:radial-gradient(ellipse at 68% 20%,#dae8ef65,transparent 48%),radial-gradient(ellipse at 42% 110%,#ece4d947,transparent 43%)}
-.header-seascape svg{position:absolute;right:13%;top:0;width:64%;height:100%;color:#7495a4;opacity:.32;mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent)}
+.header-seascape{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background:radial-gradient(ellipse at 69% 12%,#f6dcaa75,transparent 28%),radial-gradient(ellipse at 51% 112%,#9bdcd859,transparent 43%),radial-gradient(ellipse at 35% 0%,#afd1f065,transparent 46%)}
+.header-seascape svg{position:absolute;right:13%;top:0;width:64%;height:100%;color:#5d9dc0;opacity:.6;mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent)}
+.header-seascape path:nth-child(2),.header-seascape path:nth-child(3){stroke:#5baea9}
+.header-seascape path:nth-child(5),.header-seascape path:nth-child(6){stroke:#baa276}
+.header-seascape circle{stroke:#c5a16a;fill:#f2d7a530}
+.header-seascape circle:last-child{fill:#c5a16a}
 .unified-header>.brand,.unified-header>.header-actions{position:relative;z-index:1}
-@media(max-width:760px){.header-seascape svg{right:13%;width:58%;opacity:.22}.header-seascape{background:radial-gradient(ellipse at 65% 30%,#dae8ef60,transparent 65%)}}
+@media(max-width:760px){.header-seascape svg{right:13%;width:58%;opacity:.45}.header-seascape{background:radial-gradient(ellipse at 72% 10%,#f6dcaa60,transparent 40%),radial-gradient(ellipse at 50% 110%,#9bdcd850,transparent 60%),radial-gradient(ellipse at 30% 0%,#afd1f04a,transparent 55%)}}
