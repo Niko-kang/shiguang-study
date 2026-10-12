@@ -1,10 +1,18 @@
-/* Soft coastal color, with pointer-transparent ornamental linework. */
-.unified-header{position:relative;isolation:isolate}
-.header-seascape{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background:radial-gradient(ellipse at 69% 12%,#f6dcaa75,transparent 28%),radial-gradient(ellipse at 51% 112%,#9bdcd859,transparent 43%),radial-gradient(ellipse at 35% 0%,#afd1f065,transparent 46%)}
-.header-seascape svg{position:absolute;right:13%;top:0;width:64%;height:100%;color:#5d9dc0;opacity:.6;mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent)}
-.header-seascape path:nth-child(2),.header-seascape path:nth-child(3){stroke:#5baea9}
-.header-seascape path:nth-child(5),.header-seascape path:nth-child(6){stroke:#baa276}
-.header-seascape circle{stroke:#c5a16a;fill:#f2d7a530}
-.header-seascape circle:last-child{fill:#c5a16a}
-.unified-header>.brand,.unified-header>.header-actions{position:relative;z-index:1}
-@media(max-width:760px){.header-seascape svg{right:13%;width:58%;opacity:.45}.header-seascape{background:radial-gradient(ellipse at 72% 10%,#f6dcaa60,transparent 40%),radial-gradient(ellipse at 50% 110%,#9bdcd850,transparent 60%),radial-gradient(ellipse at 30% 0%,#afd1f04a,transparent 55%)}}
+/* Stationery-like brand bar with a quiet coastal illustration. */
+.unified-header.refined-masthead{position:relative;isolation:isolate;height:88px;min-height:88px;background:#f8fbfc;border-bottom:1px solid #dce7eb}
+.header-seascape{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;background:radial-gradient(ellipse at 73% 20%,#f8e5c380,transparent 32%),radial-gradient(ellipse at 48% 115%,#a9dce657,transparent 47%),linear-gradient(100deg,#fbfcfd 20%,#eff7f9 57%,#fcfaf5)}
+.header-seascape svg{position:absolute;right:12%;bottom:0;width:61%;height:100%;mask-image:linear-gradient(90deg,transparent,#000 25%,#000 78%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 25%,#000 78%,transparent)}
+.header-seascape g{stroke:#70aabb;opacity:.46}.header-seascape g path:nth-child(2){stroke:#8ebcb6}.header-water{fill:#b7dfe7;opacity:.15}
+.header-sun{position:absolute;left:73%;top:13px;width:30px;height:30px;border-radius:50%;border:1px solid #d9b47d52;background:linear-gradient(150deg,#f9e7cdae,#f8ecd94d);box-shadow:0 0 28px 12px #f7e8d157}
+.unified-header.refined-masthead>.brand,.unified-header.refined-masthead>.header-actions{position:relative;z-index:1}
+.unified-header.refined-masthead .refined-brand{gap:13px}
+.unified-header.refined-masthead .refined-brand .brand-icon{height:45px;width:45px;border-radius:14px;background:linear-gradient(140deg,#fff,#edf5f8);border:1px solid #d3e3ea;color:#39718e;box-shadow:0 3px 8px #4c7d9510,inset 0 1px #fff}
+.unified-header.refined-masthead .refined-brand .brand-icon svg{width:25px;height:25px}
+.unified-header.refined-masthead .refined-brand b{font-size:20px;font-weight:600;letter-spacing:1px;color:#29485b}
+.unified-header.refined-masthead .refined-brand small{font-size:9px;letter-spacing:1.3px;color:#7b8e98;margin-top:4px;gap:8px}
+.unified-header.refined-masthead .brand-year{font-weight:500;letter-spacing:2px}
+.unified-header.refined-masthead .brand-separator{height:8px;background:#bacbd2}
+.unified-header.refined-masthead .site-overview-button{height:36px;min-height:36px;padding:8px 14px;gap:7px;background:#ffffffc9;border:1px solid #d3e1e7;box-shadow:0 3px 12px #40697d08,inset 0 1px #fff;color:#3b647b;font-weight:500}
+.unified-header.refined-masthead .site-overview-button:hover{background:#fff;border-color:#9fbdcc;box-shadow:0 4px 14px #40697d12}
+.unified-header.refined-masthead .header-button-arrow{height:12px;width:12px;color:#869da9;margin-left:3px}
+@media(max-width:760px){.unified-header.refined-masthead{height:76px;min-height:76px;padding-inline:20px}.unified-header.refined-masthead .refined-brand{gap:10px}.unified-header.refined-masthead .refined-brand .brand-icon{height:37px;width:37px;border-radius:12px}.unified-header.refined-masthead .refined-brand .brand-icon svg{height:22px;width:22px}.unified-header.refined-masthead .refined-brand b{font-size:17px;letter-spacing:.5px}.unified-header.refined-masthead .refined-brand small{font-size:8px;letter-spacing:.6px}.header-seascape svg{right:6%;width:58%;opacity:.7}.header-sun{left:69%;top:14px;width:23px;height:23px}.unified-header.refined-masthead .site-overview-button{padding:7px 11px;gap:6px;font-size:11px}.unified-header.refined-masthead .header-button-arrow{display:none}}
