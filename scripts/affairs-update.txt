@@ -1,0 +1,7 @@
+每日时政编辑与发布
+
+先用 gh api 获取 Niko-kang/shiguang-study main 分支 public/data/current-affairs.json 最新内容，再编辑本地对应文件。用户已授权每日发布，不需要重复征求发布许可。
+按 Asia/Shanghai 当天日期创建一期，优先中国政府网、新华社、人民日报、部委及江西官方原文，选2—3条与MPA相关的政策、民生、基层治理、法治或应急管理消息。先阅读原文，核对发布日期与事件日期。以近48小时为主，必要时放宽7天；无可靠新闻时做明确标记的温故，不凑数，不把旧文写成当天新闻。不重复近7天题材，除非有新进展。
+结构沿用 JSON：updatedAt 为真实核验时间（含+08:00）；editions 按 date 倒序，每期 date/intro/stories。各新闻 id/title/category/publishedAt/eventDate/summary/perspective/question/hints/source/url。摘要自行简写，不转载全文；来源直达具体文章。perspective 是学习解读，与新闻事实分开；question/hints 是学习思考，不是考试押题。全期约5分钟，通俗简洁；区分地方与全国政策。保留历史所有期次，不能改动学习数据。
+用 Python3 执行 scripts/publish-affairs.py，仅提交时政JSON至源码main与静态gh-pages。脚本会保留远端历史，不会发布其他工作目录改动。检查JSON、等待Pages部署、请求公开 data/current-affairs.json 核验日期和条目。若网络错误或源文件并发冲突，先重新读取；若一分支已成功、另一分支失败，重跑会跳过已一致的文件。验证失败不能说更新成功。不要调用其他历史publish脚本，它们可能包含无关改动。
+发布地址 https://niko-kang.github.io/shiguang-study/current-affairs/ 。普通成功无需发新闻到聊天，出现阻塞或重大异常再通知。
