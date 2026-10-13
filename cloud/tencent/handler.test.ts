@@ -185,3 +185,23 @@ test('bulk visit deletion affects only selected visits and supports restoration'
  assert.deepEqual(visits.map(v=>v.deleted),[false,false,undefined]);
  assert.notEqual((await call('deleteVisits',[])).status,200);
 });
+
+import {withRequestIp} from './request-ip';
+test('runtime IP survives failed geolocation and cannot be replaced by client IP',async()=>{
+ const {store,visits}=memory();const handle=createHandler(store);
+ const event={path:'/api/visit',method:'PUT',body:{path:'/plan/',networkRegion:'查询失败'}};
+ await handle(withRequestIp(event,'203.0.113.5'));
+ assert.equal(visits[0].ip,'203.0.113.5');
+ await handle(withRequestIp({...event,body:{...event.body,ip:'198.51.100.2',networkRegion:'wrong city'}},'2001:db8::5'));
+ assert.equal(visits[1].ip,'2001:db8::5');assert.notEqual(visits[1].networkRegion,'wrong city');
+ assert.deepEqual(withRequestIp(event,undefined),event);
+ assert.deepEqual(withRequestIp(event,'not-an-ip'),event);
+});
+test('request IP added only when a new visit or timer session starts',()=>{
+ for(const action of ['save','edit','resume','stop']){
+  const event={path:'/api/timer',method:'PUT',body:{action,version:1}};
+  assert.deepEqual(withRequestIp(event,'203.0.113.5'),event);
+ }
+ const event={path:'/api/timer',method:'PUT',body:{action:'start',version:0}};
+ assert.equal((withRequestIp(event,'203.0.113.5') as any).body.ip,'203.0.113.5');
+});
