@@ -40,7 +40,7 @@ export function createHandler(store:Store,{readOnly=false}:{readOnly?:boolean}={
    if(!parsed.success)return reply(400,{error:'请求格式无效。'});
    const {path,method,body,kind}=parsed.data;
    if((path==='/api/record'&&method!=='PUT')||((path==='/health'||path==='/api/space')&&method!=='GET')||((path==='/api/visit'||path==='/api/visit-duration')&&method!=='PUT'))return reply(405,{error:'请求方法无效。'});
-   if(path==='/api/visit-duration')return recordDuration(store,body);
+   if(path==='/api/visit-duration')return await recordDuration(store,body);
    if(path==='/api/visit')return recordVisit(store,body);
    if(method==='PUT'&&readOnly)return reply(503,{error:'学习记录正在迁移，请稍后重试。'});
    if(path==='/api/timer')return method==='GET'?reply(200,publicTimer(await readTimer(store))):await updateTimer(store,body,days);

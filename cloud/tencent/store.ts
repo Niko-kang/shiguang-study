@@ -22,7 +22,8 @@ export function createStore(db:Database):Store{
     const {data}=await doc.get();
     const next=durationUpdate(data,tokenHash,visibleMs,Date.now());
     if(!next)return false;
-    await doc.set(next);return true;
+    const {_id,_openid,...writable}=next;
+    await doc.set(writable);return true;
    });
   },
   async addVisit(visit:Visit){
