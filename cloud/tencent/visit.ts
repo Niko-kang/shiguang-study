@@ -1,9 +1,11 @@
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import type {Store,Visit} from './handler';
 
 const text=(max:number)=>z.string().max(max).optional();
 const input=z.object({
+ trackDuration:z.boolean().optional(),
+ initialVisibleMs:z.number().int().min(0).max(60000).optional(),
  clientAt:text(40),
  path:z.string().min(1).max(200),
  title:text(160),
@@ -31,7 +33,9 @@ export async function recordVisit(store:Store,body:unknown){
  if(!parsed.success)return {status:400,body:{error:'访问记录格式无效。'}};
  const b=parsed.data;
  const at=new Date().toISOString();
+ const token=b.trackDuration?randomUUID():undefined;
  const visit:Visit={
+  ...(token?{durationTokenHash:createHash("sha256").update(token).digest("hex"),visibleMs:b.initialVisibleMs||0,initialVisibleMs:b.initialVisibleMs||0,lastSeenAt:at}:{}),
   id:`${at}_${randomUUID()}`,
   at,
   clientAt:clip(b.clientAt),
@@ -55,5 +59,21 @@ export async function recordVisit(store:Store,body:unknown){
   visibility:clip(b.visibility)
  };
  await store.addVisit(visit);
- return {status:200,body:{ok:true}};
+ return {status:200,body:{ok:true,...(token?{id:visit.id,token}:{})}};
+}
+
+const durationInput=z.object({id:z.string().min(1).max(100),token:z.string().uuid(),visibleMs:z.number().int().min(0).max(604800000)});
+export async function recordDuration(store:Store,body:unknown){
+ const parsed=durationInput.safeParse(body);
+ if(!parsed.success)return {status:400,body:{error:'访问时长格式无效。'}};
+ if(!store.updateVisitDuration)return {status:503,body:{error:'时长记录暂不可用。'}};
+ const {id,token,visibleMs}=parsed.data;
+ const ok=await store.updateVisitDuration(id,createHash('sha256').update(token).digest('hex'),visibleMs);
+ return {status:ok?200:403,body:ok?{ok:true}:{error:'访问记录凭据无效。'}};
+}
+export function durationUpdate(current:Record<string,unknown>|null,tokenHash:string,visibleMs:number,now:number):Record<string,unknown>|null{
+ if(!current||current.deleted||current.durationTokenHash!==tokenHash)return null;
+ const limit=Math.max(0,now-Date.parse(String(current.at))+(Number(current.initialVisibleMs)||0));
+ if(!Number.isFinite(limit)||visibleMs>limit+1000)return null;
+ return {...current,visibleMs:Math.max(Number(current.visibleMs)||0,Math.min(visibleMs,limit)),lastSeenAt:new Date(now).toISOString()};
 }

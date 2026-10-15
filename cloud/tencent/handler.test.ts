@@ -205,3 +205,25 @@ test('request IP added only when a new visit or timer session starts',()=>{
  const event={path:'/api/timer',method:'PUT',body:{action:'start',version:0}};
  assert.equal((withRequestIp(event,'203.0.113.5') as any).body.ip,'203.0.113.5');
 });
+
+import {durationUpdate} from './visit';
+import {createVisibleClock} from '../../lib/visit-duration';
+test('visit duration pauses while hidden and caps sleep gaps',()=>{
+ const clock=createVisibleClock(0,true);
+ assert.equal(clock.sample(10000,false),10000);
+ assert.equal(clock.sample(70000,true),10000);
+ assert.equal(clock.sample(75000),15000);
+ assert.equal(clock.sample(175000),35000);
+});
+test('visit duration is monotonic, credential protected, preserves data and does not backfill old rows',()=>{
+ const at='2026-10-15T00:00:00Z',now=Date.parse(at)+30000;
+ const row={at,durationTokenHash:'secret',visibleMs:15000,initialVisibleMs:5000,ip:'203.0.113.1'};
+ assert.equal(durationUpdate(row,'wrong',20000,now),null);
+ assert.equal(durationUpdate({...row,deleted:true},'secret',20000,now),null);
+ assert.equal(durationUpdate({at},'secret',20000,now),null);
+ assert.equal(durationUpdate(row,'secret',999999,now),null);
+ assert.equal(durationUpdate(row,'secret',10000,now)?.visibleMs,15000);
+ const next=durationUpdate(row,'secret',25000,now)!;
+ assert.equal(next.visibleMs,25000);assert.equal(next.ip,row.ip);
+ assert.equal(row.visibleMs,15000);
+});

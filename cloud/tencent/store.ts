@@ -1,7 +1,8 @@
+import {durationUpdate} from './visit';
 import type {Collection,Row,Store,Visit} from './handler';
 import type cloudbase from '@cloudbase/node-sdk';
 type Database=ReturnType<ReturnType<typeof cloudbase.init>['database']>;
-type Transaction={collection(name:string):{doc(id:string):{get():Promise<{data:Row|null}>;set(data:Row):Promise<unknown>}}};
+type Transaction={collection(name:string):{doc(id:string):{get():Promise<{data:Row|null}>;set(data:Record<string,unknown>):Promise<unknown>}}};
 export function createStore(db:Database):Store{
  return {
   async saveCheckin(id,expectedVersion,row,date){
@@ -13,6 +14,15 @@ export function createStore(db:Database):Store{
     await timer.set(row);
     if(previous?.status!=='done')await progress.set({...previous,date,status:'done',deferredTo:'',version:(previous?.version??0)+1,updatedAt:row.updatedAt});
     return true;
+   });
+  },
+  async updateVisitDuration(id,tokenHash,visibleMs){
+   return db.runTransaction(async(tx:Transaction)=>{
+    const doc=tx.collection('study_visits').doc(id);
+    const {data}=await doc.get();
+    const next=durationUpdate(data,tokenHash,visibleMs,Date.now());
+    if(!next)return false;
+    await doc.set(next);return true;
    });
   },
   async addVisit(visit:Visit){
@@ -27,7 +37,7 @@ export function createStore(db:Database):Store{
     const query=cursor?base.where({_id:db.command.lt(cursor)}):base;
     const result=await query.orderBy('_id','desc').limit(100).get();
     if(!Array.isArray(result.data))throw new Error('Invalid database response');
-    rows.push(...result.data as Visit[]);
+    rows.push(...(result.data as Visit[]).map(({durationTokenHash,...row})=>row as Visit));
     if(result.data.length<100||rows.length>=500)return rows.slice(0,500);
     cursor=String(result.data[result.data.length-1]._id);
    }

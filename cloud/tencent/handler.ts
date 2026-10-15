@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import {readTimer,updateTimer,publicTimer} from './timer';
-import {recordVisit} from './visit';
+import {recordVisit,recordDuration} from './visit';
 import plan from '../../app/plan.json';
 import {mistakeSchema,examSchema} from '../../app/learning-model';
 
@@ -14,11 +14,12 @@ export interface Store {
  setVisitDeleted(id:string,deleted:boolean):Promise<void>;
  listVisits():Promise<Visit[]>;
  addVisit(visit:Visit):Promise<void>;
+ updateVisitDuration?(id:string,tokenHash:string,visibleMs:number):Promise<boolean>;
  save(collection:Collection,id:string,expectedVersion:number,row:Row):Promise<boolean>;
 }
 const days=new Set(plan.flatMap(w=>w.days.filter(d=>d.kind==='study').map(d=>d.date)));
 const destinations=new Set(plan.flatMap(w=>w.days.filter(d=>d.kind==='study'||d.kind==='buffer').map(d=>d.date)));
-const envelope=z.object({path:z.enum(['/health','/api/space','/api/record','/api/learning','/api/timer','/api/visit']),method:z.enum(['GET','PUT']),kind:z.enum(['mistake','exam']).optional(),body:z.unknown().optional()});
+const envelope=z.object({path:z.enum(['/health','/api/space','/api/record','/api/learning','/api/timer','/api/visit','/api/visit-duration']),method:z.enum(['GET','PUT']),kind:z.enum(['mistake','exam']).optional(),body:z.unknown().optional()});
 const progressInput=z.object({date:z.string().refine(d=>days.has(d)),status:z.enum(['todo','doing','done','deferred']),deferredTo:z.string().optional(),version:z.number().int().min(0)}).superRefine((r,ctx)=>{
  if(r.status==='deferred'&&(!r.deferredTo||!destinations.has(r.deferredTo)||r.deferredTo<=r.date))ctx.addIssue({code:'custom',message:'顺延日期无效'});
 });
@@ -38,7 +39,8 @@ export function createHandler(store:Store,{readOnly=false}:{readOnly?:boolean}={
    const parsed=envelope.safeParse(event);
    if(!parsed.success)return reply(400,{error:'请求格式无效。'});
    const {path,method,body,kind}=parsed.data;
-   if((path==='/api/record'&&method!=='PUT')||((path==='/health'||path==='/api/space')&&method!=='GET')||(path==='/api/visit'&&method!=='PUT'))return reply(405,{error:'请求方法无效。'});
+   if((path==='/api/record'&&method!=='PUT')||((path==='/health'||path==='/api/space')&&method!=='GET')||((path==='/api/visit'||path==='/api/visit-duration')&&method!=='PUT'))return reply(405,{error:'请求方法无效。'});
+   if(path==='/api/visit-duration')return recordDuration(store,body);
    if(path==='/api/visit')return recordVisit(store,body);
    if(method==='PUT'&&readOnly)return reply(503,{error:'学习记录正在迁移，请稍后重试。'});
    if(path==='/api/timer')return method==='GET'?reply(200,publicTimer(await readTimer(store))):await updateTimer(store,body,days);
