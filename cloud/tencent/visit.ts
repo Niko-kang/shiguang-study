@@ -1,5 +1,6 @@
 import {createHash,randomUUID} from 'node:crypto';
 import {z} from 'zod';
+import {ipMetadataSchema,pickIpMetadata} from '../../lib/ip-metadata';
 import type {Store,Visit} from './handler';
 
 const text=(max:number)=>z.string().max(max).optional();
@@ -21,8 +22,7 @@ const input=z.object({
  pixelRatio:z.number().min(0).max(16).optional(),
  sessionId:text(80),
  visitorId:text(80),
- ip:text(80),
- networkRegion:text(160),
+ ...ipMetadataSchema.shape,
  connection:text(40),
  visibility:text(20)
 });
@@ -53,8 +53,7 @@ export async function recordVisit(store:Store,body:unknown){
   ...(b.pixelRatio===undefined?{}:{pixelRatio:b.pixelRatio}),
   sessionId:clip(b.sessionId),
   visitorId:clip(b.visitorId),
-  ip:clip(b.ip),
-  networkRegion:clip(b.networkRegion),
+  ...pickIpMetadata(b),
   connection:clip(b.connection),
   visibility:clip(b.visibility)
  };

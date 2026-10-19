@@ -1,5 +1,6 @@
 import {emptyTimer,elapsed,timerCommand,type TimerState,type Session} from '../../app/study-timer-model';
 import type {Store,Row} from './handler';
+import {pickIpMetadata,type IpMetadata} from '../../lib/ip-metadata';
 const id='shared-study-timer';
 export async function readTimer(store:Store):Promise<TimerState>{const row=(await store.list('study_entries')).find(r=>r.id===id);return row?{...(row.data as TimerState),version:row.version}:structuredClone(emptyTimer)}
 export async function updateTimer(store:Store,input:unknown,days:Set<string>,now=new Date()){
@@ -11,7 +12,7 @@ export async function updateTimer(store:Store,input:unknown,days:Set<string>,now
  if(b.action==='start'){
   if(a)return fail('已有一次学习正在计时，请先结束或取消。',409);
   if(!b.date||!days.has(b.date))return fail('请选择要学习的任务。');
-  s.active={id:crypto.randomUUID(),date:b.date,startedAt:stamp,runningSince:stamp,elapsedMs:0,endedAt:null,phase:'running',device:b.device||'未知设备',networkRegion:b.networkRegion||'未获取',...(b.ip?{ip:b.ip}:{})};
+  s.active={id:crypto.randomUUID(),date:b.date,startedAt:stamp,runningSince:stamp,elapsedMs:0,endedAt:null,phase:'running',device:b.device||'未知设备',...pickIpMetadata(b),networkRegion:b.networkRegion||'未获取'};
  }else if(['pause','resume','stop','cancel','save'].includes(b.action)){
   if(!a||b.id&&a.id!==b.id)return fail('这次计时已结束，请同步最新记录。',409);
   if(b.action==='cancel')s.active=null;
@@ -32,13 +33,13 @@ export async function updateTimer(store:Store,input:unknown,days:Set<string>,now
    const start=b.startedAt||a.startedAt,end=b.endedAt||a.endedAt!,duration=b.durationMs??a.elapsedMs;
    if(!validTimes(start,end,duration,ms))return fail('有效学习时长需大于零，且不能超过起止时间范围；结束时间不能在未来。');
    if(duration>4*3600000&&b.durationMs===undefined)return fail('本次超过4小时，请核对并填写实际学习时长。');
-   s.sessions.push({id:a.id,date:a.date,startedAt:start,endedAt:end,durationMs:duration,note:b.note||'',source:'timer',device:a.device,networkRegion:a.networkRegion,...(a.ip?{ip:a.ip}:{}),adjusted:start!==a.startedAt||end!==a.endedAt||Math.abs(duration-a.elapsedMs)>1000});s.active=null;
+   s.sessions.push({id:a.id,date:a.date,startedAt:start,endedAt:end,durationMs:duration,note:b.note||'',source:'timer',device:a.device,...pickIpMetadata(a),adjusted:start!==a.startedAt||end!==a.endedAt||Math.abs(duration-a.elapsedMs)>1000});s.active=null;
   }
  }else if(b.action==='manual'||b.action==='edit'){
   const old=s.sessions.find(r=>r.id===b.id);
   if(b.action==='edit'&&(!old||old.deleted))return fail('这条记录已不存在。',409);
   if(!b.date||!days.has(b.date)||!b.startedAt||!b.endedAt||!b.durationMs||!validTimes(b.startedAt,b.endedAt,b.durationMs,ms))return fail('请检查任务、起止时间和有效学习时长，结束时间不能在未来。');
-  const row:Session={id:old?.id||crypto.randomUUID(),date:b.date,startedAt:b.startedAt,endedAt:b.endedAt,durationMs:b.durationMs,note:b.note||'',source:old?.source||'manual',device:old?.device||b.device||'未知设备',networkRegion:old?.networkRegion||b.networkRegion||'未获取',...((old?.ip||b.ip)?{ip:old?.ip||b.ip}:{}),adjusted:b.action==='edit'};
+  const row:Session={id:old?.id||crypto.randomUUID(),date:b.date,startedAt:b.startedAt,endedAt:b.endedAt,durationMs:b.durationMs,note:b.note||'',source:old?.source||'manual',device:old?.device||b.device||'未知设备',...pickIpMetadata(old||b),networkRegion:old?.networkRegion||b.networkRegion||'未获取',adjusted:b.action==='edit'};
   if(old)s.sessions=s.sessions.map(r=>r.id===old.id?row:r);else s.sessions.push(row);
  }else{
   const row=s.sessions.find(r=>r.id===b.id);if(!row)return fail('记录不存在。');row.deleted=b.action==='delete';
@@ -54,6 +55,6 @@ function validTimes(start:string,end:string,duration:number,now:number){const lo
 
 // Metadata stays in owner storage and is never returned by the public API.
 export function publicTimer(state:TimerState):TimerState{
- const strip=<T extends {ip?:string;device?:string;networkRegion?:string}>(row:T)=>{const {ip,device,networkRegion,...visible}=row;return visible};
+ const strip=<T extends IpMetadata&{device?:string}>(row:T)=>{const {ip,device,networkRegion,ipv4,ipv6,ipv4Region,ipv6Region,ipv4Source,ipv6Source,ipProbeVersion,...visible}=row;return visible};
  return {...state,active:state.active?strip(state.active):null,sessions:state.sessions.map(strip)};
 }

@@ -1,5 +1,6 @@
 import {deviceLabel} from './device';
 import {apiFetch} from './urls';
+import {probeIpAddresses} from './ip-probe';
 import {createVisibleClock} from './visit-duration';
 
 function token(key:Storage,name:string){
@@ -31,7 +32,9 @@ export function recordVisit(){
  window.addEventListener('pagehide',()=>{void flush();});
  window.addEventListener('pageshow',()=>{sample();});
  void (async()=>{
+  const addresses=await probeIpAddresses();
   const response=await apiFetch('/api/visit',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   ...addresses,
    trackDuration:true,
    initialVisibleMs:sample(),
    clientAt:new Date().toISOString(),

@@ -262,3 +262,78 @@ test('visit duration is monotonic, credential protected, preserves data and does
  assert.equal(next.visibleMs,25000);assert.equal(next.ip,row.ip);
  assert.equal(row.visibleMs,15000);
 });
+
+import {createIpProbe} from '../../lib/ip-probe';
+test('dual protocol probes run separately, validate family and use fallback without losing the other result',async()=>{
+ const calls:string[]=[];
+ const probe=createIpProbe((async(url,options)=>{
+  const target=String(url);calls.push(target);
+  assert.equal(options?.credentials,'omit');assert.equal(options?.referrerPolicy,'no-referrer');
+  if(target==='https://api.ipify.org')return new Response('2001:db8::9'); // Wrong protocol must not be accepted.
+  if(target==='https://api6.ipify.org')throw new Error('Unavailable');
+  return new Response(target.includes('ipv4')?'203.0.113.7':'2001:db8::7');
+ }) as typeof fetch);
+ const result=await probe();
+ assert.deepEqual(result,{ipProbeVersion:1,ipv4:'203.0.113.7',ipv6:'2001:db8::7'});
+ assert.equal(calls.length,4);assert.deepEqual(await probe(),result);assert.equal(calls.length,4);
+});
+test('probe timeout and network failure remain bounded, cached briefly and never invent an address',async()=>{
+ let calls=0,now=100;
+ const probe=createIpProbe((async(url)=>{
+  calls++;
+  if(String(url).includes('api.ipify.org'))return new Response('203.0.113.7');
+  if(String(url).includes('api6.ipify.org'))return new Promise(()=>{});
+  throw new Error('No IPv6 network');
+ }) as typeof fetch,10,()=>now);
+ assert.deepEqual(await probe(),{ipProbeVersion:1,ipv4:'203.0.113.7'});
+ assert.equal(calls,3);await probe();assert.equal(calls,3);
+ now+=15001;await probe();assert.equal(calls,6);
+ const offline=createIpProbe((async()=>{throw new Error('offline')}) as typeof fetch);
+ assert.deepEqual(await offline(),{ipProbeVersion:1});
+});
+test('server keeps authoritative request IP, separately geolocates IPv4 and IPv6 and ignores supplied labels',async()=>{
+ const {store,visits}=memory(),handle=createHandler(store);
+ const calls:string[]=[];
+ const event={path:'/api/visit',method:'PUT',body:{path:'/plan/',ip:'198.51.100.5',ipv4:'198.51.100.6',ipv6:'2001:db8::8',ipv4Region:'untrusted4',ipv6Region:'untrusted6',ipv6Source:'request',ipProbeVersion:1}};
+ await handle(await withBilibiliRegion(event,'203.0.113.5',async(ip)=>{calls.push(ip);return ip.includes(':')?'中国 · 江西 · 南昌':'中国 · 上海';}));
+ const v=visits[0];assert.equal(v.ip,'203.0.113.5');assert.equal(v.ipv4,v.ip);assert.equal(v.ipv6,'2001:db8::8');
+ assert.equal(v.networkRegion,'中国 · 上海');assert.equal(v.ipv4Region,'中国 · 上海');assert.equal(v.ipv6Region,'中国 · 江西 · 南昌');
+ assert.equal(v.ipv4Source,'request');assert.equal(v.ipv6Source,'probe');assert.equal(v.ipProbeVersion,1);
+ assert.deepEqual(calls.sort(),['2001:db8::8','203.0.113.5'].sort());
+ // An IPv6 request must win over a conflicting IPv6 probe too.
+ const reverse=await withBilibiliRegion(event,'2001:db8::1',async()=>regionUnavailable) as any;
+ assert.equal(reverse.body.ipv6,'2001:db8::1');assert.equal(reverse.body.ipv6Source,'request');assert.equal(reverse.body.ipv4,'198.51.100.6');assert.equal(reverse.body.ipv4Source,'probe');
+ assert.equal(reverse.body.networkRegion,regionUnavailable);
+});
+test('failed region lookup does not discard either protocol, and invalid probes never enter storage',async()=>{
+ const {store,visits}=memory(),handle=createHandler(store);
+ const event={path:'/api/visit',method:'PUT',body:{path:'/plan/',ipv6:'2001:db8::8',ipProbeVersion:1}};
+ await handle(await withBilibiliRegion(event,'203.0.113.5',async()=>{throw new Error('offline')}));
+ assert.equal(visits[0].ipv4,'203.0.113.5');assert.equal(visits[0].ipv6,'2001:db8::8');
+ assert.equal(visits[0].ipv4Region,regionUnavailable);assert.equal(visits[0].ipv6Region,regionUnavailable);
+ const invalid={...event,body:{path:'/plan/',ipv4:'2001:db8::5',ipv6:'not-an-ip',ipv4Region:'fake',ipv6Region:'fake',ipProbeVersion:1}};
+ await handle(await withBilibiliRegion(invalid,'203.0.113.5',async()=>'中国'));
+ assert.equal(visits[1].ipv6,undefined);assert.equal(visits[1].ipv6Region,undefined);assert.equal(visits[1].ipv4,'203.0.113.5');
+ const noRequest=await withBilibiliRegion(event,undefined,async()=>'中国') as any;
+ assert.equal(noRequest.body.ip,undefined);assert.equal(noRequest.body.ipv6Source,'probe');
+});
+test('dual IP metadata survives timer save/edit/delete/restore, remains private and does not modify older records',async()=>{
+ const {store}=memory();const {updateTimer,readTimer,publicTimer}=await import('./timer');const days=new Set(['2026-10-08']);
+ const start=new Date('2026-10-09T10:00:00Z'),end=new Date('2026-10-09T10:30:00Z');
+ const metadata={ip:'203.0.113.5',networkRegion:'中国 · 上海',ipv4:'203.0.113.5',ipv6:'2001:db8::8',ipv4Region:'中国 · 上海',ipv6Region:'中国 · 江西',ipv4Source:'request' as const,ipv6Source:'probe' as const,ipProbeVersion:1 as const};
+ const old={id:'f1c60c21-ff88-44d7-9311-a7aa9b8bb0c8',date:'2026-10-08',startedAt:'2026-10-08T10:00:00Z',endedAt:'2026-10-08T10:30:00Z',durationMs:1800000,note:'原始记录',source:'timer',adjusted:false,ip:'2001:db8::2',networkRegion:'旧地区'};
+ await store.save('study_entries','shared-study-timer',0,{id:'shared-study-timer',kind:'timer',version:1,updatedAt:'original',data:{version:1,active:null,sessions:[old]}});
+ assert.equal((await updateTimer(store,{action:'start',date:'2026-10-08',version:1,...metadata},days,start)).status,200);
+ const active=await readTimer(store);assert.equal(active.active?.ipv6,metadata.ipv6);
+ const stripped=publicTimer(active).active!;
+ for(const key of Object.keys(metadata))assert.equal((stripped as any)[key],undefined);
+ await updateTimer(store,{action:'stop',version:2},days,end);
+ await updateTimer(store,{action:'save',version:3},days,end);
+ const saved=await readTimer(store),id=saved.sessions[1].id;
+ assert.equal(saved.sessions[1].ipv6Region,metadata.ipv6Region);assert.deepEqual(saved.sessions[0],old);
+ await updateTimer(store,{action:'edit',id,date:'2026-10-08',version:4,startedAt:start.toISOString(),endedAt:end.toISOString(),durationMs:60000,ipv6:'2001:db8::999',note:'调整'},days,end);
+ await updateTimer(store,{action:'delete',id,version:5},days,end);
+ await updateTimer(store,{action:'restore',id,version:6},days,end);
+ const final=await readTimer(store);assert.equal(final.sessions[1].ipv6,metadata.ipv6);assert.deepEqual(final.sessions[0],old);
+ for(const key of Object.keys(metadata))assert.equal((publicTimer(final).sessions[1] as any)[key],undefined);
+});

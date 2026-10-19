@@ -46,8 +46,21 @@ IPv4 or IPv6 address using Bilibili's IP service with a 2.5-second timeout.
 Only country, province and city are retained; coordinates are ignored. A failed
 or mismatched query still saves the observed IP and a region-unavailable label.
 Successful results are cached for five minutes, failures for fifteen seconds.
-Existing records are not backfilled or overwritten. Browsers no longer query
-ipwho.is or Bilibili directly. Visit rows are written to `study_visits` and are
+For new visits and start/manual check-ins, browsers separately probe IPv4-only
+and IPv6-only HTTPS endpoints (ipify, then IP.SB on failure), each with a
+1.8-second deadline. The two protocols run concurrently, with a one-minute
+in-memory cache (fifteen seconds if either protocol was unavailable). Failure
+never removes the runtime-observed IP. No location permission is requested.
+The server prefers its observed address for that protocol, validates any
+other protocol reported by the browser, and queries Bilibili for each address
+in parallel. `ip` and `networkRegion` keep their original request-source meaning;
+`ipv4`/`ipv6`, `ipv4Region`/`ipv6Region` and acquisition-source fields are added.
+Browser probes are client-reported metadata, not verified identity or precise
+location. Missing protocols remain absent. All of these fields are excluded
+from public timer responses. Existing rows are neither backfilled nor
+overwritten; the admin view groups their original IP by protocol without
+writing to storage. Browsers do not query ipwho.is or Bilibili directly.
+Visit rows are written to `study_visits` and are
 returned only by `/api/admin`. Public timer, progress and learning responses
 omit visit data. The study website does not display visit logs. No precise
 geolocation is requested.
