@@ -1,0 +1,1 @@
+import{t as e}from"./index-7OvtEn8s.js";import{t}from"./dashboard-sjF4O1Q3.js";var n=e();function r(){return(0,n.jsx)(t,{initialTab:`timeline`})}export{r as default};
