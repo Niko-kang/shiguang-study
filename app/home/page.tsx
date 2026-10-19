@@ -1,9 +1,15 @@
 import {ArrowUpRight, ArrowRight, BookOpen, CalendarDays, NotebookPen, Library, ClipboardCheck} from 'lucide-react';
 import {pageUrl} from '@/lib/urls';
+import {coverPreview} from './cover-preview';
 import './cover.css';
 
-export default function Home(){return <main className="cover-page">
- <img className="cover-background" src={pageUrl('/assets/study-corner-clear-ocean.webp')} fetchPriority="high" alt="浅色墙面围着朝海的窗，书桌前的白纱帘被微风轻轻拂动"/>
+const imageSizes='(max-aspect-ratio: 3/2) 150vh, 100vw';
+const imageSet=(format:string)=>[768,1280,1536].map(width=>`${pageUrl(`/assets/clear-ocean-${width}.${format}`)} ${width}w`).join(', ');
+export default function Home(){return <main className="cover-page" style={{backgroundImage:`url("${coverPreview}")`,backgroundSize:'cover',backgroundPosition:'center'}}>
+ <picture aria-hidden="true">
+  <source type="image/avif" srcSet={imageSet('avif')} sizes={imageSizes}/>
+  <img className="cover-background" src={pageUrl('/assets/clear-ocean-1536.webp')} srcSet={imageSet('webp')} sizes={imageSizes} width={1536} height={1024} loading="eager" decoding="async" fetchPriority="high" alt="" style={{opacity:0}} suppressHydrationWarning onLoad={event=>{event.currentTarget.style.opacity='1'}}/>
+ </picture>
  <div className="cover-shade" aria-hidden="true"/>
  <header className="cover-header">
   <a className="cover-brand" href={pageUrl('/')} aria-label="小翁自习室首页"><BookOpen size={22} strokeWidth={1.4}/><span>小翁自习室</span></a>
