@@ -1,5 +1,4 @@
 import {deviceLabel} from './device';
-import {lookupNetworkRegion} from './network-region';
 import {apiFetch} from './urls';
 import {createVisibleClock} from './visit-duration';
 
@@ -32,7 +31,6 @@ export function recordVisit(){
  window.addEventListener('pagehide',()=>{void flush();});
  window.addEventListener('pageshow',()=>{sample();});
  void (async()=>{
-  const network=await lookupNetworkRegion();
   const response=await apiFetch('/api/visit',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
    trackDuration:true,
    initialVisibleMs:sample(),
@@ -51,8 +49,6 @@ export function recordVisit(){
    pixelRatio:window.devicePixelRatio,
    sessionId:token(sessionStorage,'shiguang-visit-session'),
    visitorId:token(localStorage,'shiguang-visit-visitor'),
-   ip:network.ip,
-   networkRegion:network.networkRegion,
    connection:connection(),
    visibility:document.visibilityState
   })});

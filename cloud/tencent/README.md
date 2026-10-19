@@ -40,9 +40,14 @@ test sessions are imported. Pre-release snapshots and verification output are
 under ignored `backups/checkin-release-20261009/`.
 
 Device labels are client-reported, not proof of identity or exact phone models.
-IP and approximate region are requested from ipwho.is at start/manual check-in
-and on each production page load for private visit logs, with a five-second
-timeout and graceful failure. Visit rows are written to `study_visits` and are
+The runtime-observed request IP is recorded at start/manual check-in and on
+each production page load for private visit logs. The server queries that exact
+IPv4 or IPv6 address using Bilibili's IP service with a 2.5-second timeout.
+Only country, province and city are retained; coordinates are ignored. A failed
+or mismatched query still saves the observed IP and a region-unavailable label.
+Successful results are cached for five minutes, failures for fifteen seconds.
+Existing records are not backfilled or overwritten. Browsers no longer query
+ipwho.is or Bilibili directly. Visit rows are written to `study_visits` and are
 returned only by `/api/admin`. Public timer, progress and learning responses
 omit visit data. The study website does not display visit logs. No precise
 geolocation is requested.

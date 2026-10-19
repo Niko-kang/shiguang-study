@@ -1,7 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Play,Pause,Square,Clock3,Plus,RotateCcw} from 'lucide-react';
 import {deviceLabel} from '@/lib/device';
-import {lookupNetworkRegion} from '@/lib/network-region';
 import {apiFetch} from '@/lib/urls';
 import {Dialog,DialogContent,DialogTitle,DialogDescription} from '@/components/ui/dialog';
 import {chinaDay,durationText,elapsed,type Session,type TimerState} from './study-timer-model';
@@ -21,7 +20,7 @@ export default function StudyTimer({onChange,requestedDate,onSaved,onClose,onOpe
  useEffect(()=>{void refresh();const t=setInterval(()=>{if(document.visibilityState==='visible')void refresh()},15000);const f=()=>void refresh();window.addEventListener('focus',f);return()=>{clearInterval(t);window.removeEventListener('focus',f)}},[refresh]);
  useEffect(()=>{const t=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(t)},[]);
  useEffect(()=>{if(requestedDate)setDate(requestedDate)},[requestedDate]);
- async function act(action:string,extra:Record<string,unknown>={}){if(!state||busy)return false;setBusy(true);setError('');setMessage('');try{const network=action==='start'||action==='manual'?await lookupNetworkRegion():{};const r=await apiFetch('/api/timer',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:state.version,action,device:deviceLabel(),...network,...extra})}),data=await r.json();if(!r.ok){if(r.status===409)void refresh();throw new Error(data.error||'暂未保存，请重试。')}accept(data);return data as TimerState}catch(e){setError((e as Error).message);return false}finally{setBusy(false)}}
+ async function act(action:string,extra:Record<string,unknown>={}){if(!state||busy)return false;setBusy(true);setError('');setMessage('');try{const r=await apiFetch('/api/timer',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:state.version,action,device:deviceLabel(),...extra})}),data=await r.json();if(!r.ok){if(r.status===409)void refresh();throw new Error(data.error||'暂未保存，请重试。')}accept(data);return data as TimerState}catch(e){setError((e as Error).message);return false}finally{setBusy(false)}}
  const globalActive=state?.active,active=globalActive?.date===date?globalActive:null,sessions=state?.sessions.filter(s=>!s.deleted)||[],today=chinaDay(new Date(now));
  const weekStart=(()=>{const d=new Date(today+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return d.toISOString().slice(0,10)})();
  const total=(rows:Session[])=>rows.reduce((n,s)=>n+s.durationMs,0);

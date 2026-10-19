@@ -187,6 +187,41 @@ test('bulk visit deletion affects only selected visits and supports restoration'
 });
 
 import {withRequestIp} from './request-ip';
+import {withBilibiliRegion} from './request-ip';
+import {createBilibiliRegionLookup,parseBilibiliRegion,regionUnavailable} from './network-region';
+test('Bilibili regions match the recorded IP, normalize IPv6 and ignore coordinates',async()=>{
+ const ip='2001:db8::5';
+ const payload={code:0,data:{addr:'2001:0db8:0000:0000:0000:0000:0000:0005',country:'中国',province:'江西',city:'南昌',latitude:123,longitude:456}};
+ assert.equal(parseBilibiliRegion(payload,ip),'中国 · 江西 · 南昌');
+ assert.throws(()=>parseBilibiliRegion(payload,'203.0.113.5'));
+ assert.equal(parseBilibiliRegion({code:0,data:{addr:ip,country:'中国',province:'上海',city:'上海'}},ip),'中国 · 上海');
+ let calls=0;
+ const lookup=createBilibiliRegionLookup((async(url)=>{calls++;assert.equal(new URL(String(url)).searchParams.get('ip'),ip);return Response.json(payload);}) as typeof fetch);
+ assert.deepEqual(await Promise.all([lookup(ip),lookup(ip)]),['中国 · 江西 · 南昌','中国 · 江西 · 南昌']);
+ assert.equal(calls,1);
+ const failed=createBilibiliRegionLookup((async()=>Response.json({code:-412})) as typeof fetch);
+ assert.equal(await failed(ip),regionUnavailable);
+ const blocked=createBilibiliRegionLookup((async()=>{throw new Error('Timeout or network failure')}) as typeof fetch);
+ assert.equal(await blocked(ip),regionUnavailable);
+});
+test('server lookup preserves IP on failure, ignores spoofed client regions and skips existing records',async()=>{
+ const {store,visits}=memory(),handle=createHandler(store);
+ const event={path:'/api/visit',method:'PUT',body:{path:'/plan/',ip:'198.51.100.2',networkRegion:'untrusted region'}};
+ await handle(await withBilibiliRegion(event,'203.0.113.5',async(ip)=>{assert.equal(ip,'203.0.113.5');return '中国 · 江西 · 南昌'}));
+ assert.equal(visits[0].ip,'203.0.113.5');assert.equal(visits[0].networkRegion,'中国 · 江西 · 南昌');
+ await handle(await withBilibiliRegion(event,'2001:db8::5',async()=>{throw new Error('offline')}));
+ assert.equal(visits[1].ip,'2001:db8::5');assert.equal(visits[1].networkRegion,regionUnavailable);
+ let calls=0;
+ const lookup=async()=>{calls++;return '中国 · 江西'};
+ for(const path of ['/api/visit-duration','/api/admin'])assert.deepEqual(await withBilibiliRegion({...event,path},'203.0.113.5',lookup),{...event,path});
+ for(const action of ['save','edit','resume','stop','cancel']){
+  const other={path:'/api/timer',method:'PUT',body:{action}};
+  assert.deepEqual(await withBilibiliRegion(other,'203.0.113.5',lookup),other);
+ }
+ const missing=await withBilibiliRegion(event,undefined,lookup) as any;
+ assert.equal(missing.body.ip,undefined);assert.notEqual(missing.body.networkRegion,'untrusted region');assert.equal(calls,0);
+ assert.equal(visits[0].networkRegion,'中国 · 江西 · 南昌');
+});
 test('runtime IP survives failed geolocation and cannot be replaced by client IP',async()=>{
  const {store,visits}=memory();const handle=createHandler(store);
  const event={path:'/api/visit',method:'PUT',body:{path:'/plan/',networkRegion:'查询失败'}};
