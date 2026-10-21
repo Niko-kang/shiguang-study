@@ -1,0 +1,1 @@
+import{t as e}from"./index-DY5mBD06.js";import{t}from"./learning-workspace-DX4mACRy.js";var n=e(),r={title:`模拟考试 · 小翁自习室`};function i(){return(0,n.jsx)(t,{kind:`exam`})}export{i as default,r as metadata};

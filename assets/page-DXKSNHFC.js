@@ -1,0 +1,1 @@
+import{t as e}from"./index-DY5mBD06.js";import{t}from"./dashboard-DuhcGPVJ.js";var n=e();function r(){return(0,n.jsx)(t,{initialTab:`timeline`})}export{r as default};
