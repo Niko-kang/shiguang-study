@@ -1,0 +1,1 @@
+import{t as e}from"./index-DxexAvFT.js";import{t}from"./dashboard-C2yHs8kK.js";var n=e();function r(){return(0,n.jsx)(t,{initialTab:`plan`})}export{r as default};
