@@ -1,0 +1,1 @@
+import{t as e}from"./index-BuxGlpsa.js";import{t}from"./learning-workspace-B_AE3XgI.js";var n=e(),r={title:`错题本 · 小翁自习室`};function i(){return(0,n.jsx)(t,{kind:`mistake`})}export{i as default,r as metadata};

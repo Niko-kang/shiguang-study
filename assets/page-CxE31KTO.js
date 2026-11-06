@@ -1,0 +1,1 @@
+import{t as e}from"./index-BuxGlpsa.js";import{t}from"./dashboard-BtlhU7Dl.js";var n=e();function r(){return(0,n.jsx)(t,{initialTab:`timeline`})}export{r as default};
